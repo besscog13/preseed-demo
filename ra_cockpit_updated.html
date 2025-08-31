@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RA/RC Governed Cognition Cockpit</title>
+<style>
+  :root { --bg:#0f1115; --panel:#151922; --text:#e6e6e6; --muted:#9aa4b2; --good:#1fbf75; --warn:#e9a23b; --bad:#e04f5f; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+  header { padding:16px 20px; border-bottom:1px solid #222836; display:flex; align-items:center; gap:16px; }
+  .chip { font-size:12px; padding:4px 10px; border-radius:999px; color:#cbd5e1; background:#1e2433; border:1px solid #2a3246; }
+  main { padding:16px; display:grid; grid-template-columns: 1.2fr 1fr; gap:16px; }
+  section { background:var(--panel); border:1px solid #21283a; border-radius:12px; padding:16px; }
+  h2 { margin:0 0 12px 0; font-size:16px; color:#cbd5e1; }
+  label { font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
+  input[type=text], input[type=number] { width:100%; padding:10px; background:#0f1320; color:#e6e6e6; border:1px solid #27304a; border-radius:8px; outline:none; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+  button { background:#2a3550; border:1px solid #364266; color:#e6e6e6; padding:10px 12px; border-radius:8px; cursor:pointer; }
+  button:hover { background:#344061; }
+  .grid-3 { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; }
+  .metric { background:#0f1320; padding:12px; border:1px solid #27304a; border-radius:8px; }
+  .metric .val { font-size:20px; font-weight:600; }
+  .metric .label { font-size:12px; color:var(--muted); }
+  .decision { font-size:24px; font-weight:700; }
+  .decision.accept { color: var(--good); }
+  .decision.revise { color: var(--warn); }
+  .decision.refund { color: var(--bad); }
+  table { width:100%; border-collapse: collapse; }
+  th, td { padding:8px; border-bottom:1px solid #27304a; font-size:13px; text-align:left; }
+  .small { font-size:12px; color:var(--muted); }
+  canvas { width:100%; height:120px; background:#0f1320; border:1px solid #27304a; border-radius:8px; }
+  .badge { padding:2px 6px; border-radius:6px; font-size:12px; border:1px solid #2a3246; background:#1e2433; }
+  .breach { color: var(--bad); }
+  .ok { color: var(--good); }
+  .muted { color: var(--muted); }
+</style>
+<style>
+/* ---- High-Contrast Controls Patch (host-proof) ---- */
+:root{--rc-brand:#111827;--rc-ink:#0f172a;--rc-accent:#4f46e5}
+@media (prefers-color-scheme: dark){:root{--rc-brand:#e6e6ea;--rc-ink:#e6e6ea;--rc-accent:#8ab4f8}}
+button, .btn, a[role="button"], input[type="button"], input[type="submit"]{
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  padding:10px 14px !important; border-radius:12px !important;
+  border:3px solid var(--rc-brand) !important;
+  background: var(--rc-brand) !important; color:#fff !important;
+  font-weight:800 !important; letter-spacing:.2px; cursor:pointer;
+}
+button:hover, .btn:hover, a[role="button"]:hover{ filter:brightness(1.06) }
+button:focus-visible, .btn:focus-visible, a[role="button"]:focus-visible{
+  outline:3px solid var(--rc-accent) !important; outline-offset:2px;
+}
+/* Tabs / pills */
+.tab, .pill, .chip{ border-width:2px !important }
+</style>
+</head>
+<body>
+<header>
+  <div style="font-weight:700;">RA/RC Governed Cognition Cockpit</div>
+  <div class="chip">u★-anchored</div>
+  <div class="chip">LPD + SLRC</div>
+  <div class="chip">Deterministic Phases</div>
+</header>
+
+<main>
+  <section id="govern">
+    <h2>Score → Floors → Decision</h2>
+    <div class="row">
+      <div>
+        <label>g (optional if computing from vector + u★)</label>
+        <input id="inp-g" type="number" step="0.0001" placeholder="e.g., 0.82">
+      </div>
+      <div>
+        <label>Cost ($)</label>
+        <input id="inp-cost" type="number" step="0.000001" value="0.0125">
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>Calibrator path</label>
+        <input id="inp-cal" type="text" placeholder="calibrators/value_v1.json" value="calibrators/value_v1.json">
+      </div>
+      <div>
+        <label>Risk tags (comma)</label>
+        <input id="inp-risk" type="text" placeholder="pii,bias_sensitive">
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>vector_path (if computing g)</label>
+        <input id="inp-vec" type="text" placeholder="/abs/path/to/vector.npy">
+      </div>
+      <div>
+        <label>u_star_path (if computing g)</label>
+        <input id="inp-ustar" type="text" placeholder="gold/u_star.npy" value="gold/u_star_demo.npy">
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>τ_v (min ValueScore)</label>
+        <input id="inp-tauv" type="number" step="0.01" value="0.80">
+      </div>
+      <div>
+        <label>τ_L (min LPD)</label>
+        <input id="inp-taul" type="number" step="0.01" value="1.25">
+      </div>
+    </div>
+    <div style="margin-top:12px; display:flex; gap:10px;">
+      <button id="btn-score">Score & Decide (POST /score/full)</button>
+      <button id="btn-slrc">SLRC Check (POST /slrc/check)</button>
+    </div>
+    <div id="decision" style="margin-top:16px;">
+      <div class="decision muted">—</div>
+      <div class="small" id="breaches">breaches: —</div>
+      <div class="grid-3" style="margin-top:10px;">
+        <div class="metric"><div class="val" id="val-g">—</div><div class="label">g (cos to u★)</div></div>
+        <div class="metric"><div class="val" id="val-vs">—</div><div class="label">ValueScore</div></div>
+        <div class="metric"><div class="val" id="val-lpd">—</div><div class="label">LPD</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Live Metrics (/metrics)</h2>
+    <div class="grid-3">
+      <div class="metric"><div class="val" id="m-vs">—</div><div class="label">rcra_valuescore</div></div>
+      <div class="metric"><div class="val" id="m-lpd">—</div><div class="label">rcra_lpd</div></div>
+      <div class="metric"><div class="val" id="m-breach">—</div><div class="label">rcra_tau_breach_total</div></div>
+    </div>
+    <div style="margin-top:12px;">
+      <label>rcra_g_mean (sparkline)</label>
+      <canvas id="spark"></canvas>
+    </div>
+    <div class="small muted" style="margin-top:6px;">Polling every 2s from http://localhost:8000/metrics</div>
+  </section>
+
+  <section style="grid-column: 1 / span 2;">
+    <h2>Drift Status (GET /drift/status)</h2>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+      <button id="btn-drift">Refresh</button>
+      <span class="small muted">Aggregates g from runtime logs, grouped by source.</span>
+    </div>
+    <div class="grid-3">
+      <div class="metric"><div class="val" id="d-mean">—</div><div class="label">Global u★ gain (mean)</div></div>
+      <div class="metric"><div class="val" id="d-sources">—</div><div class="label">Sources seen</div></div>
+      <div class="metric"><div class="val" id="d-n">—</div><div class="label">Samples</div></div>
+    </div>
+    <table id="drift-table" style="margin-top:12px;">
+      <thead><tr><th>Source</th><th>n</th><th>mean</th><th>std</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+const API = (path) => `http://localhost:8000${path}`;
+
+// Utilities
+function parseProm(text) {
+  const out = {}; 
+  text.trim().split(/\n+/).forEach(line => {
+    const m = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)\s+(-?\d+(?:\.\d+)?)$/);
+    if (m) out[m[1]] = parseFloat(m[2]);
+  });
+  return out;
+}
+
+function setDecision(dec, breaches=[]) {
+  const el = document.querySelector('.decision');
+  el.textContent = dec ? dec.toUpperCase() : '—';
+  el.classList.remove('muted','accept','revise','refund');
+  if (dec) el.classList.add(dec); else el.classList.add('muted');
+  const b = document.getElementById('breaches');
+  b.innerHTML = breaches.length ? 'breaches: <span class="breach">' + breaches.join(', ') + '</span>' : '<span class="ok">no breaches</span>';
+}
+
+async function postJSON(url, body) {
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function val(id, v) { document.getElementById(id).textContent = (v==null ? '—' : (typeof v==='number' ? v.toFixed(4) : v)); }
+
+// Score & Decide
+document.getElementById('btn-score').addEventListener('click', async () => {
+  try {
+    const gInput = document.getElementById('inp-g').value;
+    const g = gInput ? parseFloat(gInput) : null;
+    const body = {
+      g,
+      vector_path: g==null ? (document.getElementById('inp-vec').value || null) : null,
+      u_star_path: g==null ? (document.getElementById('inp-ustar').value || null) : null,
+      cost: parseFloat(document.getElementById('inp-cost').value),
+      calibrator_path: document.getElementById('inp-cal').value,
+      risk_tags: (document.getElementById('inp-risk').value || '').split(',').map(s=>s.trim()).filter(Boolean),
+      floors: { tau_v: parseFloat(document.getElementById('inp-tauv').value), tau_L: parseFloat(document.getElementById('inp-taul').value) }
+    };
+    const res = await postJSON(API('/score/full'), body);
+    val('val-g', res.g); val('val-vs', res.ValueScore); val('val-lpd', res.LPD);
+    setDecision(res.decision, res.breaches || []);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+});
+
+// SLRC Check
+document.getElementById('btn-slrc').addEventListener('click', async () => {
+  try {
+    const body = {
+      g: parseFloat(document.getElementById('inp-g').value),
+      cost: parseFloat(document.getElementById('inp-cost').value),
+      calibrator_path: document.getElementById('inp-cal').value,
+      risk_tags: (document.getElementById('inp-risk').value || '').split(',').map(s=>s.trim()).filter(Boolean),
+      floors: { tau_v: parseFloat(document.getElementById('inp-tauv').value), tau_L: parseFloat(document.getElementById('inp-taul').value) }
+    };
+    const res = await postJSON(API('/slrc/check'), body);
+    val('val-g', body.g); val('val-vs', res.ValueScore); val('val-lpd', res.LPD);
+    setDecision(res.decision, res.breaches || []);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+});
+
+// Drift
+async function refreshDrift() {
+  try {
+    const r = await fetch(API('/drift/status'));
+    const d = await r.json();
+    val('d-mean', d.u_star_gain_mean);
+    const keys = Object.keys(d.per_source || {});
+    val('d-sources', keys.length);
+    let totalN = 0;
+    const tbody = document.querySelector('#drift-table tbody');
+    tbody.innerHTML = '';
+    keys.forEach(k => {
+      const s = d.per_source[k];
+      totalN += s.n;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${k}</td><td>${s.n}</td><td>${s.mean.toFixed(4)}</td><td>${s.std.toFixed(4)}</td>`;
+      tbody.appendChild(tr);
+    });
+    val('d-n', totalN);
+  } catch (e) {
+    console.warn('Drift fetch failed', e);
+  }
+}
+document.getElementById('btn-drift').addEventListener('click', refreshDrift);
+
+// Metrics polling + sparkline
+const spark = document.getElementById('spark');
+const ctx = spark.getContext('2d');
+let gMeanHistory = [];
+function drawSpark() {
+  const W = spark.width = spark.clientWidth * devicePixelRatio;
+  const H = spark.height = 120 * devicePixelRatio;
+  ctx.clearRect(0,0,W,H);
+  if (gMeanHistory.length < 2) return;
+  const min = Math.min(...gMeanHistory), max = Math.max(...gMeanHistory);
+  const pad = 8 * devicePixelRatio;
+  const n = gMeanHistory.length;
+  ctx.lineWidth = 2 * devicePixelRatio;
+  ctx.strokeStyle = '#7aa2f7';
+  ctx.beginPath();
+  for (let i=0;i<n;i++) {
+    const x = pad + (W-2*pad) * (i/(n-1));
+    const y = H - pad - (H-2*pad) * ((gMeanHistory[i]-min)/Math.max(1e-6, (max-min)));
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  // baseline
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath(); ctx.moveTo(pad, H-pad); ctx.lineTo(W-pad,H-pad); ctx.stroke();
+}
+
+async function pollMetrics() {
+  try {
+    const r = await fetch(API('/metrics'));
+    if (!r.ok) throw new Error('metrics not available');
+    const text = await r.text();
+    const m = parseProm(text);
+    document.getElementById('m-vs').textContent = (m.rcra_valuescore ?? '—');
+    document.getElementById('m-lpd').textContent = (m.rcra_lpd ?? '—');
+    document.getElementById('m-breach').textContent = (m.rcra_tau_breach_total ?? '—');
+    const gmean = parseFloat(m.rcra_g_mean ?? 'NaN');
+    if (!isNaN(gmean)) {
+      gMeanHistory.push(gmean);
+      if (gMeanHistory.length > 100) gMeanHistory.shift();
+      drawSpark();
+    }
+  } catch (e) {
+    // ignore transient failures
+  } finally {
+    setTimeout(pollMetrics, 2000);
+  }
+}
+pollMetrics();
+refreshDrift();
+</script>
+
+<!-- Evaluator Drawer (mock-first; optional live) -->
+<style>
+#rcDrawerToggle{position:fixed;right:16px;bottom:16px;z-index:9999}
+#rcDrawer{position:fixed;right:0;top:0;bottom:0;width:min(520px,96vw);
+  transform:translateX(100%);transition:transform .25s ease;z-index:9998;
+  background:rgba(255,255,255,.98);color:#0f172a;border-left:4px solid #111827;
+  box-shadow:-12px 0 40px rgba(0,0,0,.22);padding:14px;overflow:auto}
+@media (prefers-color-scheme: dark){
+  #rcDrawer{background:rgba(15,19,26,.98);color:#e6e6ea;border-left:4px solid #e6e6ea}
+}
+#rcDrawer.open{transform:none}
+#rcDrawer h3{margin:4px 0 8px 0}
+#rcDrawer .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#rcDrawer .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13px}
+#rcClose{position:sticky;top:0;float:right}
+#rcFloors{border:1px solid #cbd5e1;border-radius:10px;padding:8px;margin-top:8px}
+#rcScores{border:1px solid #cbd5e1;border-radius:10px;padding:8px;margin-top:8px}
+#rcRaw{white-space:pre-wrap;font-size:12px;border:1px solid #cbd5e1;border-radius:10px;padding:8px;margin-top:8px}
+</style>
+<button id="rcDrawerToggle" class="btn">Evaluator</button>
+<aside id="rcDrawer" aria-hidden="true">
+  <button id="rcClose" class="btn">Close</button>
+  <h2 style="margin:6px 0 10px 0;">Evaluator</h2>
+  <div class="row">
+    <div>
+      <label style="font-size:12px">Output</label>
+      <textarea id="rcOut" rows="8" placeholder="Paste output here…"
+        style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px"></textarea>
+      <div class="row" style="margin-top:8px">
+        <div><label style="font-size:12px">context_id</label><input id="rcCtx" placeholder="demo"
+          style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px"/></div>
+        <div><label style="font-size:12px">SLRC</label>
+          <select id="rcSlrc" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px">
+            <option value="default">default</option>
+            <option value="strict">strict</option>
+            <option value="lenient">lenient</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label style="font-size:12px">Base URL</label>
+          <input id="rcBase" placeholder="http://localhost:8080"
+            style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px"/>
+        </div>
+        <div><label style="font-size:12px">Mode</label>
+          <select id="rcMode" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px">
+            <option value="mock" selected>Mock</option>
+            <option value="live">Live</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button id="rcRun" class="btn">Run</button>
+      </div>
+    </div>
+    <div>
+      <h3>Floors</h3>
+      <div id="rcFloors" class="kv"></div>
+      <div id="rcScores" class="kv" style="margin-top:8px"></div>
+      <div style="margin-top:8px;font-weight:800">Decision: <span id="rcDecision">—</span></div>
+      <div id="rcTags" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+  </div>
+  <h3>Raw</h3>
+  <pre id="rcRaw"></pre>
+</aside>
+<script>
+(function(){
+  const $=s=>document.querySelector(s);
+  let MODE='mock', BASE='';
+  const kv = obj => Object.entries(obj).map(([k,v])=>`<div>${k}</div><div><b>${v}</b></div>`).join('');
+  function mockFloors(v){ if(v==='strict')return {tau_v:0.86,tau_L:1.35,sigma_max:0.20,d_min:3};
+    if(v==='lenient')return {tau_v:0.80,tau_L:1.20,sigma_max:0.26,d_min:2}; return {tau_v:0.84,tau_L:1.30,sigma_max:0.22,d_min:2}; }
+  function mockEval(text,f){ const spec=/\b(maybe|might|probably|guess|assume)\b/i.test(text||'');
+    const v=spec?0.84:0.89; const v_net=+(v-(spec?0.03:0)).toFixed(3);
+    const lpd=+(v_net/0.001).toFixed(3); const sigma=(text||'').toLowerCase().includes('objective')?0.19:0.25;
+    const ok=!(v_net<f.tau_v||lpd<f.tau_L||sigma>f.sigma_max||2<f.d_min);
+    return {value:{v:+v.toFixed(3),v_net}, lpd:{lpd,lpd_net:lpd}, sigma, depth:2, ok, tags: spec?[{id:'speculative_language',conf:0.12}]:[], raw:{note:'mock'}}; }
+  async function api(path, method='POST', body){ const u=`${BASE}${path}`;
+    const res=await fetch(u,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+    if(!res.ok) throw new Error(res.status+' '+res.statusText);
+    const ct=res.headers.get('content-type')||''; return ct.includes('json')?res.json():res.text(); }
+  function loadFloors(){ const variant=$('#rcSlrc').value||'default';
+    if(MODE==='mock'){ $('#rcFloors').innerHTML=kv(mockFloors(variant)); return; }
+    api('/slrc/select','POST', variant).then(j=>$('#rcFloors').innerHTML=kv(j.floors||mockFloors(variant)))
+      .catch(()=>$('#rcFloors').innerHTML=kv(mockFloors(variant))); }
+  async function run(){ const text=$('#rcOut').value||'Objective: win a 30-day pilot with refund-backed SLA.';
+    const ctx=$('#rcCtx').value||'demo'; const policy=$('#rcSlrc').value||'default'; const floors=mockFloors(policy);
+    if(MODE==='mock'){ const r=mockEval(text,floors); render(r); $('#rcRaw').textContent=JSON.stringify(r.raw,null,2); return; }
+    try{ const j=await api('/detector/eval','POST',{output:text, context_id:ctx, policy}); render({ value:j.value||{}, lpd:j.lpd||{}, sigma:j.sigma, depth:j.depth, ok:!!j.ok, tags:j.tags||[], raw:j }); $('#rcRaw').textContent=JSON.stringify(j,null,2); }
+    catch(e){ const r=mockEval(text,floors); render(r); $('#rcRaw').textContent=JSON.stringify({error:e.message, fallback:'mock'},null,2); } }
+  function render(r){ $('#rcScores').innerHTML=kv({v:r.value?.v, v_net:r.value?.v_net, lpd:r.lpd?.lpd, lpd_net:r.lpd?.lpd_net, sigma:r.sigma, d:r.depth});
+    $('#rcDecision').innerHTML = r.ok?'<span style="color:#166534">BILL</span>':'<span style="color:#b91c1c">REFUND</span>';
+    const tags=r.tags||[]; $('#rcTags').innerHTML = tags.length? tags.map(t=>`<span class="chip">${t.id} (${t.conf||t.weight||''})</span>`).join(' '):'<span class="chip">no tags</span>'; }
+  document.addEventListener('click', (e)=>{
+    if(e.target.id==='rcDrawerToggle'){ $('#rcDrawer').classList.add('open'); }
+    if(e.target.id==='rcClose'){ $('#rcDrawer').classList.remove('open'); }
+    if(e.target.id==='rcRun'){ run(); }
+  });
+  $('#rcMode').addEventListener('change', e=>{ MODE=e.target.value; loadFloors(); });
+  $('#rcBase').addEventListener('change', e=>{ BASE=e.target.value.trim(); });
+  $('#rcSlrc').addEventListener('change', loadFloors);
+  loadFloors();
+})();
+</script>
+
+</body>
+</html>
