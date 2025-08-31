@@ -1,212 +1,87 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Pre‑seed Demo — Investor Toggle</title>
-<style>
-:root{--ink:#0f172a;--bg:#fff;--mut:#e2e8f0;--brand:#111827;--accent:#4f46e5;--card:#fff}
-@media (prefers-color-scheme: dark){:root{--bg:#0b0c10;--card:#111217;--ink:#e6e6ea;--mut:#2a2d36;--brand:#e6e6ea;--accent:#8ab4f8}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-header{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;background:var(--card);border-bottom:2px solid var(--mut);position:sticky;top:0;z-index:6}
-h1{margin:0;font-size:16px}
-.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.badge{background:#eef2ff;border:2px solid #c7d2fe;color:#1e3a8a;border-radius:999px;padding:6px 10px;font-weight:700}
-.btn,button,.tab,a[role="button"]{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:10px 14px !important;
-  border-radius:12px !important;border:3px solid var(--brand) !important;background:var(--brand) !important;
-  color:#fff !important;text-decoration:none !important;font-weight:800 !important;letter-spacing:.2px;cursor:pointer}
-.btn:hover,button:hover,.tab:hover,a[role="button"]:hover{filter:brightness(1.06)}
-.btn:focus-visible,button:focus-visible,.tab:focus-visible,a[role="button"]:focus-visible{outline:3px solid var(--accent) !important;outline-offset:2px}
-.tabs{display:flex;gap:10px;padding:10px 16px;background:var(--bg);border-bottom:2px solid var(--mut);position:sticky;top:56px;z-index:5}
-.tab{background:#fff !important;color:#111827 !important}
-.tab.active{background:#111827 !important;color:#fff !important}
-.container{max-width:1200px;margin:0 auto;padding:12px}
-.panel{background:var(--card);border:1px solid var(--mut);border-radius:12px;padding:16px;margin:12px 0}
-.grid{display:grid;grid-template-columns:2fr 1fr;gap:12px}
-.card{background:var(--card);border:1px solid var(--mut);border-radius:12px;padding:12px}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px}
-.kv div{padding:4px 0;border-bottom:1px dashed #e5e7eb}
-input,select,textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;background:var(--card);color:var(--ink)}
-.small{font-size:12px;color:#475569}
-.bottombar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;
-  padding:10px;background:rgba(255,255,255,.98);border-top:2px solid var(--mut);backdrop-filter:saturate(1.2) blur(6px);z-index:7}
-@media (prefers-color-scheme: dark){.bottombar{background:rgba(0,0,0,.5)}}
-main{margin-bottom:72px}
-pre{white-space:pre-wrap;font-size:13px}
-</style>
+  <meta charset="UTF-8">
+  <title>RA/RC Demo Index</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#0f1115; --ink:#e9eef5; --mut:#9aa4b2; --btn:#2b2f3a; --btnh:#3a4050; }
+    *{box-sizing:border-box}
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(180deg, #0f1115 0%, #121623 100%);
+      min-height: 100vh;
+    }
+    header { padding: 18px 20px; border-bottom: 1px solid #1c2230; }
+    header h1 { margin:0; font-size: 18px; letter-spacing: .3px; color:#dfe7f3}
+    nav {
+      padding: 10px 12px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(6px);
+      background: rgba(15,17,21,.6);
+      border-bottom: 1px solid #1c2230;
+    }
+    nav button, nav a {
+      background: var(--btn);
+      color: var(--ink);
+      border: 1px solid #2f3545;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 600;
+      letter-spacing: .2px;
+    }
+    nav button:hover, nav a:hover { background: var(--btnh); }
+    #contentFrame {
+      width: 100%;
+      height: calc(100vh - 120px);
+      border: none;
+      display: block;
+    }
+    footer { color: var(--mut); font-size: 12px; padding: 10px 14px; border-top:1px solid #1c2230 }
+  </style>
+  <script>
+    function loadPage(file) {
+      const f = document.getElementById('contentFrame');
+      f.src = file;
+      window.scrollTo({ top: f.offsetTop - 8, behavior: 'smooth' });
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      // Default: show the investor page embedded
+      loadPage('anchor_all_in_one_5_merged_2.html');
+    });
+  </script>
 </head>
 <body>
-<header>
-  <h1>Pre‑seed Demo — Investor Toggle</h1>
-  <div class="controls">
-    <span class="badge" id="modeBadge">Mock</span>
-    <input id="baseUrl" placeholder="http://localhost:8080" style="min-width:260px"/>
-    <button id="toggleMode">Mock</button>
-  </div>
-</header>
+  <header><h1>RA/RC Demo – Index</h1></header>
+  <nav>
+    <!-- Investor: embedded and open-in-new-tab -->
+    <button onclick="loadPage('anchor_all_in_one_5_merged_2.html')">Investor</button>
+    <a href="anchor_all_in_one_5_merged_2.html" target="_blank" rel="noopener">Investor (New Tab)</a>
 
-<nav class="tabs">
-  <button class="tab active" data-view="investor">Investor</button>
-  <button class="tab" data-view="governance">Governance</button>
-  <button class="tab" data-view="ops">Alignment</button>
-  <button class="tab" data-view="evaluator">Evaluator</button>
-</nav>
+    <!-- Governance: embedded and open-in-new-tab -->
+    <button onclick="loadPage('ra_cockpit_updated.html')">Governance</button>
+    <a href="ra_cockpit_updated.html" target="_blank" rel="noopener">Governance (New Tab)</a>
 
-<main class="container">
+    <!-- Alignment/Ops: embedded and open-in-new-tab -->
+    <button onclick="loadPage('ra_cockpit_ops_updated.html')">Alignment</button>
+    <a href="ra_cockpit_ops_updated.html" target="_blank" rel="noopener">Alignment (New Tab)</a>
 
-  <section id="panel-investor" class="panel">
-    <div class="controls" style="justify-content:flex-start">
-      <label class="small">Investor cockpit:</label>
-      <select id="investorSelect">
-        <option value="cockpit_embed_meta_promotion_signed_updated.html" selected>Signed Cockpit (recommended)</option>
-        <option value="anchor_all_in_one_5_merged_2.html">All‑in‑One Cockpit (full)</option>
-      </select>
-      <button id="openInvestor" class="btn">Open in new tab</button>
-    </div>
-    <iframe id="frame-investor" style="width:100%;height:76vh;border:1px solid var(--mut);border-radius:12px;background:#fff"
-      src="cockpit_embed_meta_promotion_signed_updated.html" title="Investor"></iframe>
-  </section>
+    <!-- Cockpit Variant: link out only (no embedding) -->
+    <a href="cockpit_embed_meta_promotion_signed_updated.html" target="_blank" rel="noopener">Cockpit Variant</a>
+  </nav>
 
-  <section id="panel-governance" class="panel" style="display:none">
-    <iframe id="frame-governance" style="width:100%;height:76vh;border:1px solid var(--mut);border-radius:12px;background:#fff"
-      src="ra_cockpit_updated.html" title="Governance"></iframe>
-  </section>
+  <!-- Embedded view -->
+  <iframe id="contentFrame" title="Embedded view"></iframe>
 
-  <section id="panel-ops" class="panel" style="display:none">
-    <iframe id="frame-ops" style="width:100%;height:76vh;border:1px solid var(--mut);border-radius:12px;background:#fff"
-      src="ra_cockpit_ops_updated.html" title="Alignment"></iframe>
-  </section>
-
-  <section id="panel-evaluator" class="panel" style="display:none">
-    <div class="grid">
-      <div class="card">
-        <h3 style="margin:0 0 8px 0">Evaluate</h3>
-        <label class="small">Output</label>
-        <textarea id="output" rows="7" placeholder="Paste output..."></textarea>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
-          <div><label class="small">context_id</label><input id="contextId" placeholder="demo"/></div>
-          <div>
-            <label class="small">SLRC</label>
-            <select id="slrc">
-              <option value="default" selected>default</option>
-              <option value="strict">strict</option>
-              <option value="lenient">lenient</option>
-            </select>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-          <button id="btnEval">Run</button>
-        </div>
-      </div>
-      <div class="card">
-        <h3 style="margin:0 0 8px 0">Floors</h3>
-        <div id="floors" class="kv"></div>
-      </div>
-    </div>
-
-    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
-      <div class="card">
-        <h3 style="margin-top:0">Scores</h3>
-        <div id="scores" class="kv"></div>
-      </div>
-      <div class="card">
-        <h3 style="margin-top:0">Decision</h3>
-        <div id="decision" style="font-weight:800;font-size:18px"></div>
-        <div id="tags" style="margin-top:8px"></div>
-      </div>
-    </div>
-
-    <div class="card" style="margin-top:12px">
-      <h3 style="margin:0 0 8px 0">Raw</h3>
-      <pre id="raw" style="margin:0"></pre>
-    </div>
-  </section>
-</main>
-
-<div class="bottombar">
-  <a class="btn" data-goto="investor" href="#">Investor</a>
-  <a class="btn" data-goto="governance" href="#">Governance</a>
-  <a class="btn" data-goto="ops" href="#">Alignment</a>
-  <a class="btn" data-goto="evaluator" href="#">Evaluator</a>
-</div>
-
-<script>
-
-const $ = s=>document.querySelector(s);
-const kv = obj => Object.entries(obj).map(([k,v])=>`<div>${k}</div><div><b>${v}</b></div>`).join('');
-let MODE='mock', API_BASE='';
-function mockFloors(variant){
-  if(variant==='strict') return {tau_v:0.86,tau_L:1.35,sigma_max:0.20,d_min:3};
-  if(variant==='lenient')return {tau_v:0.80,tau_L:1.20,sigma_max:0.26,d_min:2};
-  return {tau_v:0.84,tau_L:1.30,sigma_max:0.22,d_min:2};
-}
-function mockEvaluate(text, floors){
-  const speculative = /\b(maybe|might|probably|guess|assume)\b/i.test(text||'');
-  const v = speculative ? 0.84 : 0.89;
-  const v_net = +(v - (speculative?0.03:0)).toFixed(3);
-  const lpd = +(v_net / 0.001).toFixed(3);
-  const sigma = (text||'').toLowerCase().includes('objective') ? 0.19 : 0.25;
-  const ok = !(v_net < floors.tau_v || lpd < floors.tau_L || sigma > floors.sigma_max || 2 < floors.d_min);
-  return { value:{v:+v.toFixed(3), v_net}, lpd:{lpd, lpd_net:lpd}, sigma, depth:2, ok, tags: speculative ? [{id:'speculative_language', conf:0.12}] : [], raw:{note:'mock'} };
-}
-async function api(url, method='GET', body){
-  const u = `${API_BASE}${url}`;
-  const res = await fetch(u,{method,headers:{'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
-  if(!res.ok) throw new Error(res.status+' '+res.statusText);
-  const ct = res.headers.get('content-type')||'';
-  return ct.includes('application/json') ? res.json() : res.text();
-}
-function setFloors(f){ const el=$('#floors'); if(el){ el.innerHTML = kv(f); } window.__floors=f; }
-function setMode(m){ MODE=m; const b=$('#modeBadge'); if(b) b.textContent = m==='live'?'Live':'Mock'; const t=$('#toggleMode'); if(t) t.textContent=m==='live'?'Live':'Mock'; }
-function loadFloorsUI(){
-  const variant = ($('#slrc')||{}).value || 'default';
-  if(MODE==='mock'){ setFloors(mockFloors(variant)); return; }
-  api('/slrc/select','POST', variant).then(j=> setFloors(j.floors||mockFloors(variant))).catch(()=> setFloors(mockFloors(variant)));
-}
-async function runEval(){
-  const text = ($('#output')||{}).value || 'Objective: win a 30-day pilot with refund-backed SLA.';
-  const context_id = ($('#contextId')||{}).value || 'demo';
-  const variant = ($('#slrc')||{}).value || 'default';
-  const floors = window.__floors || mockFloors(variant);
-  if(MODE==='mock'){
-    const r = mockEvaluate(text, floors);
-    renderEval(r); $('#raw') && ($('#raw').textContent = JSON.stringify(r.raw,null,2)); return;
-  }
-  try{
-    const j = await api('/detector/eval','POST',{output:text, context_id, policy:variant});
-    renderEval({ value:j.value||{}, lpd:j.lpd||{}, sigma:j.sigma, depth:j.depth, ok:!!j.ok, tags:j.tags||[], raw:j });
-  }catch(e){
-    renderEval(mockEvaluate(text, floors));
-    $('#raw') && ($('#raw').textContent = JSON.stringify({error:e.message, fallback:'mock'}, null, 2));
-  }
-}
-function renderEval(r){
-  $('#scores') && ($('#scores').innerHTML = kv({v:r.value?.v, v_net:r.value?.v_net, lpd:r.lpd?.lpd, lpd_net:r.lpd?.lpd_net, sigma:r.sigma, d:r.depth}));
-  $('#decision') && ($('#decision').innerHTML = r.ok ? '<span style="color:#166534">BILL</span>' : '<span style="color:#b91c1c">REFUND</span>');
-  const tags = (r.tags||[]); $('#tags') && ($('#tags').innerHTML = tags.length? tags.map(t=>`<span class="badge">${t.id} (${t.conf||t.weight||''})</span>`).join(' ') : '<span class="badge">no tags</span>');
-}
-
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  const v=b.dataset.view;
-  ['investor','governance','ops','evaluator'].forEach(id=>{
-    document.getElementById('panel-'+id).style.display = (id===v?'block':'none');
-  });
-}));
-document.querySelectorAll('[data-goto]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();document.querySelector(`.tab[data-view="${a.dataset.goto}"]`).click();}));
-document.getElementById('toggleMode').onclick=()=> setMode(MODE==='mock'?'live':'mock');
-document.getElementById('baseUrl').onchange=(e)=> API_BASE=e.target.value.trim();
-document.getElementById('slrc').onchange=loadFloorsUI;
-document.getElementById('btnEval').onclick=runEval;
-
-// Investor toggle
-const sel = document.getElementById('investorSelect');
-const iframe = document.getElementById('frame-investor');
-sel.addEventListener('change', ()=> { iframe.src = sel.value; });
-document.getElementById('openInvestor').addEventListener('click', ()=> window.open(iframe.src, '_blank'));
-
-setMode('mock'); loadFloorsUI();
-</script>
+  <footer>Tip: If a page 404s on GitHub Pages, ensure the file sits next to index.html and the link path stays relative.</footer>
 </body>
 </html>
