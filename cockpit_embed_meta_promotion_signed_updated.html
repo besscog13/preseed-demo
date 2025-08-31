@@ -1,0 +1,1427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <base target="_self"><title>RC/RA Revamped Demo — Governance Cockpit</title>
+  <style>
+    :root { --bg:#0e1116;--card:#151a22;--text:#e8eef7;--muted:#9fb0c0;--accent:#5bd6ff;--good:#58d68d;--bad:#ff6b6b;--warn:#ffd34d;--shadow:0 10px 30px rgba(0,0,0,0.35);--radius:12px; }
+    html,body{background:var(--bg);color:var(--text);margin:0;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif}
+    header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid #232a33;position:sticky;top:0;background:rgba(14,17,22,0.9);backdrop-filter:blur(8px);z-index:50}
+    header h1{font-size:16px;margin:0;letter-spacing:.5px}
+    .badge{padding:3px 8px;border-radius:999px;background:#202734;color:var(--muted);font-size:12px}
+    .container{max-width:1200px;margin:0 auto;padding:24px}
+    .row{display:flex;gap:16px;flex-wrap:wrap}
+    .card{background:var(--card);border:1px solid #232a33;border-radius:var(--radius);box-shadow:var(--shadow)}
+    .panel{padding:16px}
+    .grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{padding:8px 12px;border-radius:10px;border:1px solid #2b3441;background:#161c25;color:var(--muted);cursor:pointer}
+    .tab.active{color:var(--text);border-color:var(--accent);box-shadow:0 0 0 2px rgba(91,214,255,0.15) inset}
+    textarea,input,select{width:100%;background:#0f131a;border:1px solid #2b3441;color:var(--text);border-radius:8px;padding:10px}
+    button{background:linear-gradient(180deg,#5bd6ff,#3aa2c4);color:#001019;padding:10px 14px;border:0;border-radius:10px;cursor:pointer;font-weight:600}
+    button.ghost{background:#1a212d;color:var(--text);border:1px solid #2b3441}
+    .kpi{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:#101620;border:1px solid #2b3441}
+    .kpi .value{font-weight:700}
+    .pill{padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #2b3441;background:#101620;color:var(--muted)}
+    .ok{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+    pre{white-space:pre-wrap;word-break:break-word;background:#0f131a;padding:12px;border-radius:10px;border:1px solid #2b3441}
+    .footer{color:var(--muted);text-align:center;padding:24px}
+    .hidden{display:none !important}
+    .inline{display:inline-flex;align-items:center;gap:8px}
+    .flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .right{margin-left:auto} .editor{min-height:240px} .split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .small{font-size:12px;color:var(--muted)} a{color:var(--accent);text-decoration:none}
+  </style>
+<style>
+/* ---- High-Contrast Controls Patch (host-proof) ---- */
+:root{--rc-brand:#111827;--rc-ink:#0f172a;--rc-accent:#4f46e5}
+@media (prefers-color-scheme: dark){:root{--rc-brand:#e6e6ea;--rc-ink:#e6e6ea;--rc-accent:#8ab4f8}}
+button, .btn, a[role="button"], input[type="button"], input[type="submit"]{
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  padding:10px 14px !important; border-radius:12px !important;
+  border:3px solid var(--rc-brand) !important;
+  background: var(--rc-brand) !important; color:#fff !important;
+  font-weight:800 !important; letter-spacing:.2px; cursor:pointer;
+}
+button:hover, .btn:hover, a[role="button"]:hover{ filter:brightness(1.06) }
+button:focus-visible, .btn:focus-visible, a[role="button"]:focus-visible{
+  outline:3px solid var(--rc-accent) !important; outline-offset:2px;
+}
+/* Tabs / pills */
+.tab, .pill, .chip{ border-width:2px !important }
+</style>
+</head>
+<body>
+<header class="card">
+  <h1>RC/RA Revamped Demo • <span class="badge">Stitch‑Kit v12 UI • Consulting Mode</span></h1>
+  <div class="flex">
+    <label class="pill inline"><input type="checkbox" id="toggleMock" checked /> Mock mode</label>
+    <label class="pill inline"><input type="checkbox" id="toggleConsulting" /> Consulting Mode</label>
+    <a class="pill" href="./report.html" target="_blank">📄 Report Template</a>
+    <a class="pill" href="../docs/demo_nav_INVESTOR_COMBINED.md" target="_blank">📘 Investor Walkthrough</a>
+  </div>
+</header>
+
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" data-tab="playground">Playground</div>
+    <div class="tab" data-tab="governance">Governance</div>
+    <div class="tab" data-tab="u-star">U★ Lab</div>
+    <div class="tab" data-tab="roc">ROC & Floors</div>
+    <div class="tab" data-tab="policy">Policy Editor</div>
+    <div class="tab" data-tab="pdf">PDF Generator</div>
+    <div class="tab" data-tab="api">API Console</div>
+  </div>
+
+  <section class="card panel" id="tab-playground">
+    <div class="grid-2">
+      <div>
+        <h3>Draft → Critique → Revise (client-side loop)</h3>
+        <textarea id="inputText" rows="10" placeholder="Paste a prompt or business question to evaluate..."></textarea>
+        <div class="flex">
+          <button id="btnRun">Run Evaluation</button>
+          <button id="btnReset" class="ghost">Reset</button>
+          <span class="small">Runs against /api/detector/eval in API mode; otherwise uses the in‑browser detector.</span>
+        </div>
+      </div>
+      <div>
+        <h3>Result</h3>
+        <div class="grid-3">
+          <div class="kpi">v: <span id="kpiV" class="value">—</span></div>
+          <div class="kpi">σ: <span id="kpiSigma" class="value">—</span></div>
+          <div class="kpi">depth: <span id="kpiDepth" class="value">—</span></div>
+          <div class="kpi">cost: <span id="kpiCost" class="value">—</span></div>
+          <div class="kpi">LPD: <span id="kpiLPD" class="value">—</span></div>
+          <div class="kpi">v_net: <span id="kpiVNet" class="value">—</span></div>
+        </div>
+        <div class="flex">
+          <span id="passBadge" class="pill">SLRC: —</span>
+          <span class="pill" id="floorsNow">floors: —</span>
+        </div>
+        <details style="margin-top:12px;">
+          <summary>JSON</summary>
+          <pre id="jsonOut"></pre>
+        </details>
+        <details>
+          <summary>Risk Tags</summary>
+          <div id="riskTags"></div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="card panel hidden" id="tab-governance">
+    <div class="split">
+      <div>
+        <h3>SLRC Snapshot</h3>
+        <div id="governanceSnapshot"></div>
+        <p class="small">Shows floors vs measurement for last run, with pass/fail reasons.</p>
+      </div>
+      <div>
+        <h3>Run Log (latest 5)</h3>
+        <pre id="runLog"></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="card panel hidden" id="tab-u-star">
+    <div class="split">
+      <div>
+        <h3>Gold Paragraphs (u★) — Demo</h3>
+        <textarea id="goldSet" class="editor" placeholder="One gold paragraph per line..."></textarea>
+        <div class="flex">
+          <button id="btnMakeUStar">Make u★</button>
+          <button id="btnScore" class="ghost">Score Current Draft vs u★</button>
+        </div>
+        <p class="small">Deterministic toy embedding (384-d trigram hash) for demo reproducibility.</p>
+      </div>
+      <div>
+        <h3>u★ & Gain</h3>
+        <pre id="ustarOut"></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="card panel hidden" id="tab-roc">
+    <div class="split">
+      <div>
+        <h3>ROC Sweep (synthetic)</h3>
+        <p class="small">Simulate LPD distributions and propose τ floor updates.</p>
+        <div class="flex">
+          <button id="btnRunROC">Run ROC Sweep</button>
+          <button id="btnApplyTau" class="ghost">Apply Proposed Floors</button>
+        </div>
+        <pre id="rocOut"></pre>
+      </div>
+      <div>
+        <h3>Current Floors</h3>
+        <pre id="floorsOut"></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="card panel hidden" id="tab-policy">
+    <div class="split">
+      <div>
+        <h3>policy.yaml</h3>
+        <textarea id="policyEditor" class="editor" placeholder="Edit YAML..."></textarea>
+        <div class="flex">
+          <button id="btnPolicySave">Save (POST /api/policy)</button>
+          <button id="btnPolicyReload" class="ghost">Reload</button>
+          <label class="pill inline"><span class="small">Signature:</span><input id="sigKey" placeholder="DEMO_ONLY"/></label>
+        </div>
+      </div>
+      <div>
+        <h3>Audit</h3>
+        <pre id="policyAudit"></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="card panel hidden" id="tab-pdf">
+    <h3>Generate Multi‑Section Report (PDF)</h3>
+    <p class="small">Uses /api/pdf/generate in API mode; falls back to client‑side markup capture in Mock mode.</p>
+    <div class="flex">
+      <button id="btnPDF">Generate PDF</button>
+      <button id="btnInvestorPDF" class="ghost">Investor Runthrough PDF</button>
+      <a id="pdfDownload" class="pill hidden" download="rcra_report.pdf">Download ready</a>
+    </div>
+    <pre id="pdfStatus"></pre>
+  </section>
+
+  <section class="card panel hidden" id="tab-api">
+    <h3>API Console</h3>
+    <p class="small">Quick calls to demo endpoints.</p>
+    <div class="grid-3">
+      <button class="ghost" data-call="GET /api/policy">GET /api/policy</button>
+      <button class="ghost" data-call="POST /api/policy">POST /api/policy</button>
+      <button class="ghost" data-call="POST /api/detector/eval">POST /api/detector/eval</button>
+      <button class="ghost" data-call="POST /api/roc/sweep">POST /api/roc/sweep</button>
+      <button class="ghost" data-call="POST /api/pdf/investor_runthrough">POST /api/pdf/investor_runthrough</button>
+    </div>
+    <pre id="apiOut"></pre>
+  </section>
+
+  <div class="footer small">LPD • SLRC • RRP — Governance‑grade Reasoning. © RC/RA Labs</div>
+</div>
+
+<script>
+const tabs = document.querySelectorAll('.tab');
+const panels = {
+  playground: document.getElementById('tab-playground'),
+  governance: document.getElementById('tab-governance'),
+  'u-star': document.getElementById('tab-u-star'),
+  roc: document.getElementById('tab-roc'),
+  policy: document.getElementById('tab-policy'),
+  pdf: document.getElementById('tab-pdf'),
+  api: document.getElementById('tab-api'),
+};
+tabs.forEach(t => t.addEventListener('click', () => {
+  tabs.forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  Object.values(panels).forEach(p => p.classList.add('hidden'));
+  panels[t.dataset.tab].classList.remove('hidden');
+}));
+
+let lastResult = null;
+let runLog = [];
+
+const mockToggle = document.getElementById('toggleMock');
+const consultToggle = document.getElementById('toggleConsulting');
+const floorsNow = document.getElementById('floorsNow');
+const jsonOut = document.getElementById('jsonOut');
+const riskTagsEl = document.getElementById('riskTags');
+const passBadge = document.getElementById('passBadge');
+const runLogEl = document.getElementById('runLog');
+const governanceSnapshot = document.getElementById('governanceSnapshot');
+const policyEditor = document.getElementById('policyEditor');
+const policyAudit = document.getElementById('policyAudit');
+const floorsOut = document.getElementById('floorsOut');
+const pdfStatus = document.getElementById('pdfStatus');
+const pdfDownload = document.getElementById('pdfDownload');
+const apiOut = document.getElementById('apiOut');
+const kV = document.getElementById('kpiV');
+const kSigma = document.getElementById('kpiSigma');
+const kDepth = document.getElementById('kpiDepth');
+const kCost = document.getElementById('kpiCost');
+const kLPD = document.getElementById('kpiLPD');
+const kVNet = document.getElementById('kpiVNet');
+
+function hashTrigramEmbedding(text) {
+  const dim = 384;
+  const v = new Array(dim).fill(0);
+  const s = (text || '').toLowerCase();
+  for (let i=0; i < s.length-2; i++) {
+    const trig = s.slice(i, i+3);
+    let h = 0;
+    for (let j=0; j<trig.length; j++) h = ((h<<5)-h) + trig.charCodeAt(j);
+    const idx = Math.abs(h) % dim;
+    v[idx] += 1;
+  }
+  const norm = Math.sqrt(v.reduce((a,b)=>a+b*b,0)) || 1;
+  return v.map(x => x / norm);
+}
+function cosine(a,b){ let d=0; for(let i=0;i<a.length;i++) d+=a[i]*b[i]; return d; }
+
+let uStar = null;
+function makeUStar(paragraphs) {
+  const lines = paragraphs.split(/\n+/).map(s => s.trim()).filter(Boolean);
+  if (!lines.length) return null;
+  const dim = 384;
+  const acc = new Array(dim).fill(0);
+  lines.forEach(line => {
+    const e = hashTrigramEmbedding(line);
+    for (let i=0;i<dim;i++) acc[i] += e[i];
+  });
+  const norm = Math.sqrt(acc.reduce((a,b)=>a+b*b,0)) || 1;
+  return acc.map(x => x / norm);
+}
+
+function detectRisks(text, operators, pedagogy) {
+  const tags = [];
+  const add = (id, conf) => tags.push({id, conf: Math.max(0, Math.min(1, conf))});
+  try {
+    (operators?.risk_tags || []).forEach(rt => {
+      const re = new RegExp(rt.pattern, 'i'); if (re.test(text)) add(rt.id, Math.min(1,(rt.weight||0.1)+0.1));
+    });
+  } catch(e){}
+  try {
+    (pedagogy?.operators || []).forEach(op => {
+      const re = new RegExp(op.pattern, 'i'); if (re.test(text)) add(op.id, Math.min(1,(op.penalty||0.05)+0.1));
+    });
+  } catch(e){}
+  if (consultToggle.checked) {
+    if (/(hand\-wave|handwave|it depends)/i.test(text)) add('consulting_handwave', 0.6);
+    if (/(best practices)/i.test(text)) add('generic_best_practices', 0.4);
+  }
+  return tags;
+}
+
+function applyFloors(m, floors){
+  const reasons = [];
+  const pass = (m.v_net >= floors.v_min && m.lpd >= floors.lpd_min && m.sigma <= floors.sigma_max && m.depth >= floors.depth_min);
+  if (m.v_net < floors.v_min) reasons.push(`v_net ${m.v_net.toFixed(3)} < v_min ${floors.v_min}`);
+  if (m.lpd   < floors.lpd_min) reasons.push(`LPD ${m.lpd.toFixed(2)} < lpd_min ${floors.lpd_min}`);
+  if (m.sigma > floors.sigma_max) reasons.push(`σ ${m.sigma.toFixed(3)} > sigma_max ${floors.sigma_max}`);
+  if (m.depth < floors.depth_min) reasons.push(`depth ${m.depth} < depth_min ${floors.depth_min}`);
+  return { pass, reasons };
+}
+const DEFAULT_FLOORS = { v_min:0.84, lpd_min:1.30, sigma_max:0.22, depth_min:2 };
+
+async function loadPolicy(){
+  if (mockToggle.checked){
+    const raw = localStorage.getItem('policyYaml');
+    if (raw){ policyEditor.value = raw; }
+    else {
+      const txt = await (await fetch('../policy.yaml')).text();
+      policyEditor.value = txt;
+    }
+    floorsOut.textContent = extractFloorsFromYaml(policyEditor.value);
+    return;
+  }
+  const r = await fetch('/api/policy'); const j = await r.json();
+  policyEditor.value = j.yaml || ''; floorsOut.textContent = JSON.stringify(j.floors, null, 2);
+  policyAudit.textContent = (j.audit||[]).map(a => `• ${a.ts} ${a.actor} ${a.msg}`).join('\n');
+}
+
+function extractFloorsFromYaml(yaml){
+  const lines = (yaml||'').split(/\n/); const o = {...DEFAULT_FLOORS};
+  lines.forEach(line=>{ const m = line.trim().match(/^(v_min|lpd_min|sigma_max|depth_min):\s*([0-9.]+)/); if(m) o[m[1]]=Number(m[2]); });
+  return JSON.stringify(o, null, 2);
+}
+function parseYamlFloors(yaml){ try{ return JSON.parse(extractFloorsFromYaml(yaml)); } catch(e){ return DEFAULT_FLOORS; } }
+
+async function loadOps(){
+  const ops = await (await fetch('../operators.yaml')).text();
+  const ped = await (await fetch('../pedagogy_risk_operators.yaml')).text();
+  const parseOps = (raw) => {
+    const blocks = []; let current=null;
+    raw.split(/\n/).forEach(line=>{
+      if (/^-\s*id:/i.test(line)){ if (current) blocks.push(current); current = {id: line.split(':')[1].trim()}; }
+      else if (/pattern:/i.test(line) && current){ current.pattern = line.split(':',2)[1].trim().replace(/^["']|["']$/g,''); }
+      else if (/(weight|penalty):/i.test(line) && current){ const k=line.split(':')[0].trim(); const v=parseFloat(line.split(':')[1]); current[k]=isNaN(v)?0.1:v; }
+    });
+    if (current) blocks.push(current);
+    if (/pedagogy/i.test(raw)) return {operators: blocks};
+    return {risk_tags: blocks};
+  };
+  return { operators: parseOps(ops), pedagogy: parseOps(ped) };
+}
+
+// Run Eval
+document.getElementById('btnRun').addEventListener('click', async () => {
+  const text = document.getElementById('inputText').value || 'Demo input for evaluation';
+  const {operators, pedagogy} = await loadOps();
+  let result;
+  if (mockToggle.checked){
+    result = await localEvaluate(text, operators, pedagogy);
+  } else {
+    const r = await fetch('/api/detector/eval', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({text, context: consultToggle.checked?'consulting':'general'}) });
+    result = await r.json();
+  }
+  lastResult = result; runLog.unshift({ts:new Date().toISOString(), result}); runLog = runLog.slice(0,5);
+  renderResult(result); renderGovernance();
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  document.getElementById('inputText').value='';
+  [kV,kSigma,kDepth,kCost,kLPD,kVNet].forEach(el=>el.textContent='—');
+  jsonOut.textContent=''; riskTagsEl.innerHTML=''; passBadge.textContent='SLRC: —';
+});
+
+async function localEvaluate(text, operators, pedagogy){
+  const e = hashTrigramEmbedding(text);
+  const base = uStar || new Array(384).fill(0.0);
+  const v = Math.max(0, Math.min(1, cosine(e, base) || 0.42));
+  const tags = detectRisks(text, operators, pedagogy);
+  const penalty = tags.reduce((a,t)=> a + (t.conf||0)*0.05, 0);
+  const v_net = Math.max(0, v - penalty);
+  const len = (text||'').length || 1;
+  const sigma = Math.min(0.9, Math.abs(Math.sin(len/97)) * 0.3);
+  const depth = Math.min(5, Math.floor(((text.match(/\n|\*|\-|\d+\./g)||[]).length)/4)+1);
+  const cost = 0.002 + len * 0.000002;
+  const lpd = cost>0 ? v_net / cost : 0;
+  const floors = parseYamlFloors(policyEditor.value||'');
+  const gate = applyFloors({v_net, sigma, depth, lpd}, floors);
+  return { v, v_net, sigma, depth, cost, lpd, pass: gate.pass, reasons: gate.reasons, tags };
+}
+function renderResult(r){
+  kV.textContent = r.v.toFixed(3); kSigma.textContent = r.sigma.toFixed(3); kDepth.textContent = String(r.depth);
+  kCost.textContent = '$'+r.cost.toFixed(4); kLPD.textContent = r.lpd.toFixed(2); kVNet.textContent = r.v_net.toFixed(3);
+  jsonOut.textContent = JSON.stringify(r, null, 2);
+  riskTagsEl.innerHTML = (r.tags||[]).map(t=>`<span class="pill">${t.id} (${t.conf.toFixed(2)})</span>`).join(' ');
+  passBadge.textContent = 'SLRC: ' + (r.pass ? 'PASS ✅' : 'FAIL ❌');
+  passBadge.className = 'pill ' + (r.pass ? 'ok' : 'bad');
+  const floors = parseYamlFloors(policyEditor.value||'');
+  floorsNow.textContent = `floors: v>=${floors.v_min}, L>=${floors.lpd_min}, σ<=${floors.sigma_max}, d>=${floors.depth_min}`;
+}
+function renderGovernance(){
+  runLogEl.textContent = runLog.map(x => `${x.ts} — LPD ${x.result.lpd.toFixed(2)} • ${x.result.pass?'PASS':'FAIL'}`).join('\n');
+  if (!lastResult){ governanceSnapshot.textContent='No runs yet.'; return; }
+  const floors = parseYamlFloors(policyEditor.value||'');
+  const r = lastResult;
+  governanceSnapshot.textContent = [
+    `v_net: ${r.v_net.toFixed(3)} vs v_min ${floors.v_min}`,
+    `LPD: ${r.lpd.toFixed(2)} vs lpd_min ${floors.lpd_min}`,
+    `σ: ${r.sigma.toFixed(3)} vs sigma_max ${floors.sigma_max}`,
+    `depth: ${r.depth} vs depth_min ${floors.depth_min}`,
+    `PASS: ${r.pass} ${r.reasons?.length? '• reasons: ' + r.reasons.join('; ') : ''}`
+  ].join('\n');
+}
+
+// U★ actions
+document.getElementById('btnMakeUStar').addEventListener('click', () => {
+  const goldSet = document.getElementById('goldSet').value || 'Logic-per-Dollar ties value to cost\nSLRC refunds enforce floors';
+  uStar = makeUStar(goldSet);
+  document.getElementById('ustarOut').textContent = uStar ? `u★ ready (dim: ${uStar.length})` : 'No golds';
+});
+document.getElementById('btnScore').addEventListener('click', () => {
+  const text = document.getElementById('inputText').value;
+  if (!uStar || !text) return;
+  const e = hashTrigramEmbedding(text);
+  const v = Math.max(0, Math.min(1, cosine(e, uStar)));
+  document.getElementById('ustarOut').textContent = `cosine(text,u★) = ${v.toFixed(3)}`;
+});
+
+// ROC
+document.getElementById('btnRunROC').addEventListener('click', async () => {
+  if (mockToggle.checked){
+    const sims = Array.from({length:200}, (_,i)=> Math.max(0.2, 2.0 + Math.sin(i/7)*0.5 + (Math.random()-0.5)*0.6));
+    const sorted = sims.slice().sort((a,b)=>a-b);
+    const p75 = sorted[Math.floor(0.75*sorted.length)];
+    const floors = parseYamlFloors(policyEditor.value||'');
+    const proposal = {...floors, lpd_min: Math.max(floors.lpd_min, Number(p75.toFixed(2)))};
+    document.getElementById('rocOut').textContent = JSON.stringify({ samples: sims.slice(0,10)+'...', proposed: proposal, note: 'Knee≈P75 heuristic (demo)' }, null, 2);
+  } else {
+    const r = await fetch('/api/roc/sweep', { method:'POST' });
+    document.getElementById('rocOut').textContent = await r.text();
+  }
+});
+document.getElementById('btnApplyTau').addEventListener('click', () => {
+  try{
+    const floors = JSON.parse(document.getElementById('rocOut').textContent||'{}').proposed;
+    if (!floors) return;
+    const raw = policyEditor.value;
+    const updated = raw.replace(/(lpd_min:\s*)([0-9.]+)/, `$1${floors.lpd_min}`);
+    policyEditor.value = updated; floorsOut.textContent = extractFloorsFromYaml(updated);
+  }catch(e){}
+});
+
+// Policy editor
+document.getElementById('btnPolicyReload').addEventListener('click', loadPolicy);
+document.getElementById('btnPolicySave').addEventListener('click', async () => {
+  const yaml = policyEditor.value;
+  if (mockToggle.checked){
+    localStorage.setItem('policyYaml', yaml);
+    policyAudit.textContent = (policyAudit.textContent || '') + `\n• ${new Date().toISOString()} local DEMO edited policy`;
+    floorsOut.textContent = extractFloorsFromYaml(yaml);
+    return;
+  }
+  const sig = document.getElementById('sigKey').value || '';
+  const r = await fetch('/api/policy', { method:'POST', headers:{'Content-Type':'application/json','X-Signature':sig}, body: JSON.stringify({ yaml }) });
+  apiOut.textContent = await r.text(); await loadPolicy();
+});
+
+// PDF
+document.getElementById('btnPDF').addEventListener('click', async () => {
+  pdfStatus.textContent = 'Generating...';
+  if (mockToggle.checked){
+    const blob = new Blob([`RC/RA Report\n\nLast Result:\n${jsonOut.textContent}`], {type:'application/pdf'});
+    const url = URL.createObjectURL(blob); pdfDownload.href = url; pdfDownload.classList.remove('hidden'); pdfStatus.textContent='Client-side PDF placeholder ready.'; return;
+  }
+  const r = await fetch('/api/pdf/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:'RC/RA Report', data: lastResult||{} }) });
+  if (!r.ok){ pdfStatus.textContent = 'Server PDF failed.'; return; }
+  const blob = await r.blob(); const url = URL.createObjectURL(blob); pdfDownload.href = url; pdfDownload.classList.remove('hidden'); pdfStatus.textContent='Server PDF ready.';
+});
+document.getElementById('btnInvestorPDF').addEventListener('click', async () => {
+  pdfStatus.textContent = 'Generating Investor Runthrough...';
+  if (mockToggle.checked){
+    const blob = new Blob(['Investor Runthrough (mock)'], {type:'application/pdf'});
+    const url = URL.createObjectURL(blob); pdfDownload.href = url; pdfDownload.classList.remove('hidden'); pdfStatus.textContent='Client-side placeholder PDF ready.'; return;
+  }
+  const r = await fetch('/api/pdf/investor_runthrough', { method:'POST' });
+  const blob = await r.blob(); const url = URL.createObjectURL(blob); pdfDownload.href = url; pdfDownload.classList.remove('hidden'); pdfStatus.textContent='Investor PDF ready.';
+});
+
+// API console
+document.querySelectorAll('#tab-api [data-call]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const call = btn.getAttribute('data-call');
+    if (mockToggle.checked){ apiOut.textContent = 'Mock mode — no server requests made.'; return; }
+    if (call === 'GET /api/policy'){ const r = await fetch('/api/policy'); apiOut.textContent = await r.text(); }
+    else if (call === 'POST /api/policy'){ const payload = { yaml: policyEditor.value }; const r = await fetch('/api/policy', {method:'POST', headers:{'Content-Type':'application/json','X-Signature':(document.getElementById('sigKey').value||'')}, body: JSON.stringify(payload)}); apiOut.textContent = await r.text(); }
+    else if (call === 'POST /api/detector/eval'){ const payload = { text: document.getElementById('inputText').value || 'Demo eval' }; const r = await fetch('/api/detector/eval', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); apiOut.textContent = await r.text(); }
+    else if (call === 'POST /api/roc/sweep'){ const r = await fetch('/api/roc/sweep', {method:'POST'}); apiOut.textContent = await r.text(); }
+    else if (call === 'POST /api/pdf/investor_runthrough'){ const r = await fetch('/api/pdf/investor_runthrough', {method:'POST'}); apiOut.textContent = await r.text(); }
+  });
+});
+
+(async () => { await loadPolicy(); })();
+</script>
+
+<script>
+  // Receiver for parent page bridge
+  window.addEventListener('message', (e)=>{
+    if (!e || !e.data) return;
+    const d = e.data;
+    function ack(action){ try { parent.postMessage({ type:'cockpit:ack', action }, '*'); } catch(_){} }
+    if (d.type === 'cockpit:run'){
+      const btn = document.getElementById('btnRun'); if(btn){ btn.click(); ack('run'); }
+    } else if (d.type === 'cockpit:policy:save'){
+      const btn = document.getElementById('btnPolicySave'); if(btn){ btn.click(); ack('policy:save'); }
+    } else if (d.type === 'cockpit:pdf'){
+      const btn = document.getElementById('btnPDF'); if(btn){ btn.click(); ack('pdf'); }
+    }
+  });
+</script>
+
+
+<script>
+  window.addEventListener('message', (e)=>{
+    if (!e || !e.data) return;
+    const d = e.data;
+    if (d.type === 'anchor:state'){
+      if(d.traces){ window.cockpitTraces = d.traces; console.log('Loaded anchor traces', d.traces.length); }
+      if(d.policy){ window.cockpitPolicy = d.policy; console.log('Loaded anchor policy'); }
+      // Trigger UI refresh if needed
+      if(typeof updateDashPlus==='function') updateDashPlus();
+    }
+  });
+
+  function emitMetricUpdate(v,lpd,sigma,refundRate){
+    try { parent.postMessage({type:'cockpit:metric:update', v, lpd, sigma, refundRate}, '*'); } catch(_) {}
+  }
+  function emitPolicyUpdate(yaml){
+    try { parent.postMessage({type:'cockpit:policy:update', yaml}, '*'); } catch(_) {}
+  }
+
+  // Example hooks: call emitMetricUpdate when dashboard updates
+  if(typeof updateDashPlus==='function'){
+    const _oldUpdate = updateDashPlus;
+    updateDashPlus = function(){
+      _oldUpdate();
+      const v = window.traces?.reduce((a,b)=>a+b.v,0)/(window.traces?.length||1);
+      const lpd = window.traces?.reduce((a,b)=>a+b.lpd,0)/(window.traces?.length||1);
+      const sigma = window.traces?.reduce((a,b)=>a+b.sigma,0)/(window.traces?.length||1);
+      const refundRate = (window.traces?.filter(t=>t.refund).length || 0)/(window.traces?.length||1);
+      emitMetricUpdate(v,lpd,sigma,refundRate);
+    };
+  }
+
+  // Example hook: call emitPolicyUpdate when PUT /policy is applied
+  if(typeof applyPolicy==='function'){
+    const _oldApply = applyPolicy;
+    applyPolicy = async function(){
+      await _oldApply();
+      const txt = document.getElementById('policyEditor')?.value || '';
+      emitPolicyUpdate(txt);
+    };
+  }
+</script>
+
+
+<script>
+  // --- Cockpit SDK: state sync + telemetry emit ---
+  (function(){
+    function emit(type, payload){ try{ parent.postMessage({ type, ...payload }, '*'); }catch(_){} }
+
+    async function loadTracesArray(arr){
+      try {
+        // Preferred: set window.traces and trigger re-render hooks if present
+        window.traces = Array.isArray(arr) ? arr : [];
+        const evt = new Event('traces:updated'); window.dispatchEvent(evt);
+        // If there's a renderTable function (as in previous builds), call it
+        if (typeof renderTable === 'function') renderTable();
+        if (typeof renderSparkline === 'function') renderSparkline();
+        if (typeof renderHistogram === 'function') renderHistogram();
+        emit('telemetry', { event: 'traces_loaded', data: { n: window.traces.length } });
+        // Also emit metrics snapshot
+        try {
+          const lpdArr = window.traces.map(t=>t.lpd).filter(x=>typeof x==='number');
+          const vArr = window.traces.map(t=>t.v).filter(x=>typeof x==='number');
+          const refundRate = window.traces.filter(t=>t.refund).length / Math.max(1, window.traces.length);
+          const metrics = { avg_lpd: lpdArr.reduce((a,b)=>a+b,0)/Math.max(1,lpdArr.length), avg_v: vArr.reduce((a,b)=>a+b,0)/Math.max(1,vArr.length), refund_rate: refundRate };
+          emit('telemetry', { event: 'metrics', data: metrics });
+          emit('cockpit:metrics', { metrics });
+        } catch(_){}
+      } catch (e) {
+        console.warn('Failed to load traces array', e);
+      }
+    }
+
+    function setPolicy(text){
+      const editor = document.getElementById('policyEditor');
+      if (editor) {
+        editor.value = text || '';
+        // If previewDiff is available, refresh
+        try { if (typeof previewDiff === 'function') previewDiff(); } catch(_){}
+        emit('telemetry', { event: 'policy_loaded', data: { bytes: (text||'').length } });
+      } else {
+        // store for later
+        window._pendingPolicy = text || '';
+      }
+    }
+
+    // Patch applyPolicy (if exists) to emit updates
+    const tryPatchPolicyApply = () => {
+      const btnApply = document.getElementById('btnApplyPolicy') || document.getElementById('btnPutPolicy');
+      if (btnApply && !btnApply.dataset._patched) {
+        btnApply.dataset._patched = '1';
+        btnApply.addEventListener('click', () => {
+          try {
+            const editor = document.getElementById('policyEditor');
+            const policy = editor ? editor.value : '';
+            emit('telemetry', { event: 'policy_applied', data: { bytes: policy.length } });
+            emit('cockpit:policy:updated', { policy });
+          } catch(_){}
+        });
+      }
+    };
+    document.addEventListener('DOMContentLoaded', tryPatchPolicyApply);
+    setTimeout(tryPatchPolicyApply, 800);
+
+    // Listen for state sync
+    window.addEventListener('message', (e)=>{
+      const d = e?.data; if (!d) return;
+      if (d.type === 'state:sync') {
+        if (Array.isArray(d.traces)) loadTracesArray(d.traces);
+        if (typeof d.policy === 'string') setPolicy(d.policy);
+      }
+    });
+
+    // Expose bridge for parent if needed
+    window.CockpitBridge = { loadTracesArray, setPolicy };
+  })();
+</script>
+
+
+<script>
+(function(){
+  let originalPolicySnapshot = '';
+
+  function saveOriginalPolicy() {
+    const editor = document.getElementById('policyEditor');
+    originalPolicySnapshot = editor ? editor.value : '';
+  }
+
+  function resetTau() {
+    const editor = document.getElementById('policyEditor');
+    if (editor && originalPolicySnapshot) {
+      editor.value = originalPolicySnapshot;
+      if (typeof previewDiff === 'function') previewDiff();
+      try { parent.postMessage({ type: 'cockpit:policy:reset', policy: originalPolicySnapshot }, '*'); } catch(_){}
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    saveOriginalPolicy();
+    const btnReset = document.getElementById('btnResetTau');
+    if (btnReset) btnReset.addEventListener('click', resetTau);
+  });
+
+  // Patch applyPolicy to also notify parent of updated policy
+  const btnApply = document.getElementById('btnApplyPolicy') || document.getElementById('btnPutPolicy');
+  if (btnApply && !btnApply.dataset._patched_backsync) {
+    btnApply.dataset._patched_backsync = '1';
+    btnApply.addEventListener('click', () => {
+      try {
+        const editor = document.getElementById('policyEditor');
+        const policy = editor ? editor.value : '';
+        parent.postMessage({ type: 'cockpit:policy:updated', policy }, '*');
+      } catch(_){}
+    });
+  }
+
+  // When traces update inside cockpit, push to parent as well
+  window.addEventListener('traces:updated', () => {
+    try {
+      parent.postMessage({ type: 'cockpit:traces:updated', traces: window.traces || [] }, '*');
+    } catch(_){}
+  });
+})();
+</script>
+
+
+<script>
+  (function(){
+    function emit(type, payload){ try{ parent.postMessage({ type, ...payload }, '*'); }catch(_){} }
+
+    // Capture original floors from first-loaded policy
+    let originalPolicyText = null;
+
+    function parseFloors(text){
+      const mv = (text||'').match(/v_min:\s*([0-9.]+)/);
+      const ml = (text||'').match(/lpd_min:\s*([0-9.]+)/);
+      return { v_min: mv ? parseFloat(mv[1]) : null, lpd_min: ml ? parseFloat(ml[1]) : null };
+    }
+
+    function setPolicy(text){
+      const editor = document.getElementById('policyEditor');
+      if (editor) {
+        editor.value = text || '';
+        try { if (typeof previewDiff === 'function') previewDiff(); } catch(_){}
+        if (!originalPolicyText) originalPolicyText = text || '';
+      } else {
+        window._pendingPolicy = text || '';
+        if (!originalPolicyText) originalPolicyText = text || '';
+      }
+    }
+
+    // Back-sync state to parent
+    function pushState(){
+      const editor = document.getElementById('policyEditor');
+      const policy = editor ? editor.value : (window._pendingPolicy || '');
+      const traces = Array.isArray(window.traces) ? window.traces : [];
+      emit('state:update', { policy, traces });
+    }
+
+    // Reset τ to original floors
+    function resetTau(){
+      if (!originalPolicyText) return;
+      const editor = document.getElementById('policyEditor');
+      if (!editor) return;
+      // Replace v_min and lpd_min with original values
+      const orig = parseFloors(originalPolicyText);
+      let cur = editor.value || '';
+      if (orig.v_min !== null) cur = cur.replace(/v_min:\s*[0-9.]+/, 'v_min: ' + orig.v_min.toFixed(3));
+      if (orig.lpd_min !== null) cur = cur.replace(/lpd_min:\s*[0-9.]+/, 'lpd_min: ' + orig.lpd_min.toFixed(2));
+      editor.value = cur;
+      try { if (typeof previewDiff === 'function') previewDiff(); } catch(_){}
+      // Re-render visuals if present
+      try { if (typeof renderSparkline === 'function') renderSparkline(); if (typeof renderHistogram === 'function') renderHistogram(); } catch(_){}
+      emit('telemetry', { event: 'tau_reset', data: { orig: orig } });
+      pushState();
+    }
+
+    // Patch Apply Policy to push state
+    const patchApply = () => {
+      const btn = document.getElementById('btnApplyPolicy') || document.getElementById('btnPutPolicy');
+      if (btn && !btn.dataset._patched2) {
+        btn.dataset._patched2 = '1';
+        btn.addEventListener('click', ()=> {
+          // slight delay to allow editor change
+          setTimeout(pushState, 300);
+        });
+      }
+      const btnRun = document.getElementById('btnRun');
+      if (btnRun && !btnRun.dataset._patched2) {
+        btnRun.dataset._patched2 = '1';
+        btnRun.addEventListener('click', ()=> {
+          // push metrics soon after run (if any)
+          setTimeout(()=> emit('telemetry', { event: 'run_invoked' }), 50);
+        });
+      }
+    };
+    document.addEventListener('DOMContentLoaded', patchApply);
+    setTimeout(patchApply, 800);
+
+    // Listen for parent messages
+    window.addEventListener('message', (e)=>{
+      const d = e?.data; if (!d) return;
+      if (d.type === 'cockpit:reset_tau') {
+        resetTau();
+      } else if (d.type === 'env:update') {
+        // Optionally apply env to API base URL input if present
+        const base = d.apiBase;
+        const input = document.getElementById('baseUrl') || document.querySelector('input#baseUrl');
+        if (input && typeof base === 'string') input.value = base;
+        emit('telemetry', { event: 'env_update', data: { apiBase: base||null } });
+      } else if (d.type === 'state:sync') {
+        if (typeof d.policy === 'string') setPolicy(d.policy);
+        if (Array.isArray(d.traces)) { window.traces = d.traces; try { if (typeof renderTable==='function') renderTable(); if (typeof renderSparkline==='function') renderSparkline(); if (typeof renderHistogram==='function') renderHistogram(); } catch(_){} }
+      }
+    });
+
+    // Expose for parent
+    window.CockpitBridge2 = { resetTau, pushState, setPolicy };
+  })();
+</script>
+
+
+<script>
+// CockpitDocPopovers: lightweight popovers + route to parent drawer
+(function(){
+  // Small tooltip
+  let tip;
+  function ensureTip(){
+    if (tip) return;
+    tip = document.createElement('div');
+    tip.style.position = 'fixed';
+    tip.style.maxWidth = '360px';
+    tip.style.background = 'var(--card, #111)';
+    tip.style.border = '1px solid var(--border, #333)';
+    tip.style.borderRadius = '10px';
+    tip.style.padding = '10px 12px';
+    tip.style.boxShadow = '0 8px 24px rgba(0,0,0,.24)';
+    tip.style.zIndex = 10000;
+    tip.style.display = 'none';
+    tip.style.color = 'var(--text, #eaeaea)';
+    tip.innerHTML = '<div class="tiny" id="cdpBody"></div><div style="margin-top:8px"><a href="#" class="btn tiny" id="cdpMore">Read more →</a></div>';
+    document.body.appendChild(tip);
+  }
+  const PRIMERS = {
+    'economics#lpd': {t:'LPD — Logic-per-Dollar', b:'What: scalar of epistemic value per unit cost. Why: ensures payment only for useful reasoning. How: ValueScore (cosine to u★) ÷ cost; adjusted by LGD.'},
+    'economics#lgd': {t:'LGD — Learning Gain per Dollar', b:'What: learning improvement per cost. Why: protects ROI even when v is stable. How: ∆competency ÷ cost, folded into LPD as multiplier/floor.'},
+    'economics#v':   {t:'v — ValueScore', b:'What: semantic fidelity to u★. Why: anchors correctness to SME truth. How: cosine(u, u★) minus baseline, penalized by risks.'},
+    'economics#sigma': {t:'σ — Variance', b:'What: stability of outcomes. Why: guards against flaky reasoning. How: rolling stddev across runs; enforced with σ_max floor.'},
+    'governance#tau': {t:'τ — Floors (SLRC)', b:'What: minimum acceptable thresholds. Why: deterministic refunds and safety. How: YAML floors (v_min, lpd_min, σ_max, d_min) tuned via ROC.'},
+    'pedagogy#mis-targeted-difficulty': {t:'Pedagogy: mis-targeted-difficulty', b:'Example: content too hard/easy for ZPD → value collapse. Mitigation: adjust scaffolding; penalized in v.'}
+  };
+  function showTip(target, key){
+    ensureTip();
+    const data = PRIMERS[key]; if (!data) return;
+    const body = document.getElementById('cdpBody');
+    const more = document.getElementById('cdpMore');
+    body.innerHTML = '<strong>'+data.t+'</strong><br>'+data.b;
+    const rect = target.getBoundingClientRect();
+    tip.style.left = Math.min(rect.left, window.innerWidth - 380) + 'px';
+    tip.style.top = (rect.bottom + 6) + 'px';
+    tip.style.display = 'block';
+    more.onclick = (e)=>{
+      e.preventDefault();
+      try { parent.postMessage({ type:'docs:open', anchor:'#'+(key.split('#')[1]||'overview') }, '*'); } catch(_) {}
+      tip.style.display = 'none';
+    };
+  }
+  function hideTip(){ if (tip) tip.style.display = 'none'; }
+  function bind(selector, key){
+    document.querySelectorAll(selector).forEach(el => {
+      const on = ()=> showTip(el, key);
+      el.addEventListener('mouseenter', on);
+      el.addEventListener('mouseleave', hideTip);
+      el.addEventListener('click', (e)=>{ e.preventDefault(); on(); });
+    });
+  }
+  function bindDefaults(){
+    // Bind to any element that declares data-doc
+    document.querySelectorAll('[data-doc]').forEach(el => {
+      const key = el.getAttribute('data-doc');
+      if (!key) return;
+      el.addEventListener('mouseenter', ()=> showTip(el, key));
+      el.addEventListener('mouseleave', hideTip);
+      el.addEventListener('click', (e)=>{ e.preventDefault(); showTip(el, key); });
+    });
+    // Backstop bindings for common metric labels (non-invasive)
+    bind('[data-doc="economics#lpd"]', 'economics#lpd');
+    bind('[data-doc="economics#lgd"]', 'economics#lgd');
+    bind('[data-doc="economics#v"]', 'economics#v');
+    bind('[data-doc="economics#sigma"]', 'economics#sigma');
+    bind('[data-doc="governance#tau"]', 'governance#tau');
+    // Risk tags (if rendered)
+    document.querySelectorAll('.risk-tag[data-doc]').forEach(el => {
+      const key = el.getAttribute('data-doc') || 'pedagogy#mis-targeted-difficulty';
+      el.addEventListener('click', (e)=>{ e.preventDefault(); showTip(el, key); });
+    });
+  }
+  // τ help chip next to policy header (non-destructive)
+  const hdr = document.querySelector('h2, h3');
+  if (hdr && hdr.textContent && hdr.textContent.match(/Policy Editor/i) && !hdr.querySelector('.help-chip')){
+    const chip = document.createElement('span');
+    chip.className = 'help-chip'; chip.textContent = '?';
+    chip.style.marginLeft = '8px'; chip.style.cursor = 'help';
+    chip.setAttribute('data-doc','governance#tau');
+    hdr.appendChild(chip);
+  }
+  document.addEventListener('DOMContentLoaded', bindDefaults);
+  setTimeout(bindDefaults, 400);
+  window.addEventListener('keydown', (e)=>{ if (e.key === 'Escape') hideTip(); });
+})();
+</script>
+
+
+<style>
+  .rcra-panel{border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin:10px 0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  .rcra-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+  .rcra-row label{font-size:12px;color:#475569}
+  .rcra-row input, .rcra-row select{padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px}
+  .rcra-btn{padding:8px 10px;border:1px solid #0ea5e9;border-radius:8px;background:#0ea5e9;color:#fff;font-weight:600;cursor:pointer}
+  .rcra-btn.secondary{background:#fff;color:#0ea5e9}
+  .rcra-chip{display:inline-block;padding:4px 8px;border-radius:9999px;background:#f1f5f9;margin-left:6px}
+  .rcra-tiles{display:flex;gap:12px;flex-wrap:wrap}
+  .rcra-tile{flex:1 0 200px;border:1px solid #e2e8f0;border-radius:10px;padding:10px}
+  .rcra-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px}
+</style>
+
+<div class="rcra-panel" id="rcra-governance-panel">
+  <div class="rcra-row">
+    <strong>Governance Pro Controls</strong>
+    <span class="rcra-chip" id="rcra-status">idle</span>
+  </div>
+  <div class="rcra-row">
+    <label>Environment</label>
+    <select id="rcra-env">
+      <option value="custom">Custom</option>
+      <option value="local">Local (FastAPI:8000, Express:8001)</option>
+      <option value="docker">Docker (same host)</option>
+    </select>
+    <label>FastAPI Base URL</label><input id="rcra-fastapi" size="30" placeholder="http://localhost:8000">
+    <label>Express Base URL</label><input id="rcra-express" size="30" placeholder="http://localhost:8001">
+  </div>
+  <div class="rcra-row">
+    <label>Sign requests</label>
+    <select id="rcra-sign-toggle">
+      <option value="on" selected>ON</option>
+      <option value="off">OFF</option>
+    </select>
+    <label>kid</label><input id="rcra-kid" value="ops" size="8">
+    <label>secret (hex)</label><input id="rcra-secret" size="68" placeholder="paste hex key from config/keys.json">
+  </div>
+
+  <div class="rcra-row">
+    <label>Floors</label>
+    <input id="rcra-vmin" type="number" step="0.01" value="0.85" title="v_min">
+    <input id="rcra-lmin" type="number" step="0.01" value="1.35" title="lpd_min">
+    <input id="rcra-smax" type="number" step="0.01" value="0.21" title="sigma_max">
+    <input id="rcra-dmin" type="number" step="1" value="3" title="depth_min">
+    <button class="rcra-btn" id="rcra-propose">Propose</button>
+    <button class="rcra-btn secondary" id="rcra-approve">Approve</button>
+  </div>
+
+  <div class="rcra-row rcra-tiles">
+    <div class="rcra-tile">
+      <div>Canary Pass Rate (session)</div>
+      <div class="rcra-mono"><span id="rcra-passrate">—</span>%</div>
+    </div>
+    <div class="rcra-tile">
+      <div>Canary Failures (session)</div>
+      <div class="rcra-mono"><span id="rcra-fails">0</span></div>
+    </div>
+    <div class="rcra-tile">
+      <div>τ Floors now</div>
+      <div class="rcra-mono" id="rcra-floors-now">—</div>
+    </div>
+  </div>
+
+  <div class="rcra-row">
+    <button class="rcra-btn" id="rcra-run-canaries">Run all canaries now</button>
+    <span class="rcra-mono" id="rcra-canary-status"></span>
+  </div>
+
+  <pre class="rcra-mono" id="rcra-log" style="white-space:pre-wrap;max-height:220px;overflow:auto;background:#0b1020;color:#d1d5db;padding:10px;border-radius:8px"></pre>
+</div>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+  const log = (msg)=>{ const el = $("rcra-log"); el.textContent = (new Date().toISOString() + " " + msg + "\\n") + el.textContent; };
+
+  // Presets
+  const envSel = $("rcra-env");
+  const fapi = $("rcra-fastapi");
+  const expr = $("rcra-express");
+  envSel.addEventListener("change", ()=>{
+    if(envSel.value==="local"){
+      fapi.value = "http://localhost:8000"; expr.value = "http://localhost:8001";
+    } else if(envSel.value==="docker"){
+      fapi.value = window.location.origin.replace(/:\\d+$/,'') + ":8000";
+      expr.value = window.location.origin.replace(/:\\d+$/,'') + ":8001";
+    }
+  });
+  envSel.dispatchEvent(new Event("change"));
+
+  // HMAC helpers
+  function hexToBytes(hex){ const a=[]; for(let i=0;i<hex.length;i+=2){ a.push(parseInt(hex.substr(i,2),16)); } return new Uint8Array(a); }
+  function bytesToHex(buf){ return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""); }
+  function sortKeys(obj){
+    if(Array.isArray(obj)) return obj.map(sortKeys);
+    if(obj && typeof obj === "object"){
+      const out = {};
+      Object.keys(obj).sort().forEach(k=> out[k]=sortKeys(obj[k]));
+      return out;
+    }
+    return obj;
+  }
+  function canonicalJSON(obj){
+    // Sorted keys, compact separators
+    return JSON.stringify(sortKeys(obj));
+  }
+  async function hmacSha256Hex(secretHex, canonical){
+    const key = await crypto.subtle.importKey("raw", hexToBytes(secretHex), {name:"HMAC", hash:"SHA-256"}, false, ["sign"]);
+    const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(canonical));
+    return bytesToHex(sig);
+  }
+
+  async function signedFetch(baseUrl, path, body, action){
+    const signOn = $("rcra-sign-toggle").value === "on";
+    const kid = $("rcra-kid").value.trim();
+    const secret = $("rcra-secret").value.trim();
+    const ts = Math.floor(Date.now()/1000);
+    const nonce = ts + "-" + kid;
+
+    const reqBody = Object.assign({}, body, { kid, nonce, ts });
+    const headers = {"Content-Type":"application/json"};
+
+    if(signOn){
+      if(!kid || !secret){ throw new Error("Signing ON but kid/secret missing"); }
+      const canonical = canonicalJSON({action, floors: body.floors, nonce, ts});
+      const sig = await hmacSha256Hex(secret, canonical);
+      headers["X-Signature"] = `${kid}:${sig}:${nonce}:${ts}`;
+    }
+    const res = await fetch(baseUrl.replace(/\/$/,'') + path, { method:"POST", headers, body: JSON.stringify(reqBody) });
+    if(!res.ok){ const t = await res.text(); throw new Error(res.status + " " + t); }
+    return res.json();
+  }
+
+  async function refreshFloors(){
+    try{
+      const res = await fetch(fapi.value.replace(/\/$/,'') + "/policy/floors");
+      const j = await res.json();
+      $("rcra-floors-now").textContent = JSON.stringify(j);
+      $("rcra-status").textContent = "floors:ok";
+    }catch(e){
+      $("rcra-floors-now").textContent = "n/a";
+      $("rcra-status").textContent = "floors:err";
+    }
+  }
+
+  $("rcra-propose").addEventListener("click", async ()=>{
+    try{
+      const floors = {
+        v_min: parseFloat($("rcra-vmin").value),
+        lpd_min: parseFloat($("rcra-lmin").value),
+        sigma_max: parseFloat($("rcra-smax").value),
+        depth_min: parseInt($("rcra-dmin").value,10),
+      };
+      const r = await signedFetch(fapi.value, "/policy/floors?action=propose", {floors}, "propose");
+      log("propose → " + JSON.stringify(r));
+      await refreshFloors();
+    }catch(e){ log("propose ERR: " + e.message); }
+  });
+
+  $("rcra-approve").addEventListener("click", async ()=>{
+    try{
+      const floors = {
+        v_min: parseFloat($("rcra-vmin").value),
+        lpd_min: parseFloat($("rcra-lmin").value),
+        sigma_max: parseFloat($("rcra-smax").value),
+        depth_min: parseInt($("rcra-dmin").value,10),
+      };
+      const r = await signedFetch(fapi.value, "/policy/floors?action=approve", {floors}, "approve");
+      log("approve → " + JSON.stringify(r));
+      await refreshFloors();
+    }catch(e){ log("approve ERR: " + e.message); }
+  });
+
+  // Canary session stats
+  let sessionRuns=0, sessionPass=0, sessionFail=0;
+  function updateTiles(){
+    const passRate = sessionRuns ? Math.round(10000*sessionPass/sessionRuns)/100 : 0;
+    $("rcra-passrate").textContent = isNaN(passRate) ? "—" : passRate.toString();
+    $("rcra-fails").textContent = sessionFail.toString();
+  }
+
+  $("rcra-run-canaries").addEventListener("click", async ()=>{
+    $("rcra-canary-status").textContent = "running…";
+    try{
+      const listRes = await fetch(fapi.value.replace(/\/$/,'') + "/canary/list");
+      const j = await listRes.json();
+      const names = j.names || [];
+      for(const name of names){
+        try{
+          const r = await fetch(fapi.value.replace(/\/$/,'') + "/canary/run?name=" + encodeURIComponent(name), {method:"POST"});
+          const jr = await r.json();
+          sessionRuns += 1;
+          if(jr.pass) sessionPass += 1; else sessionFail += 1;
+          log(`canary ${name} → ${jr.pass ? "PASS" : "FAIL"}`);
+        }catch(e){ log(`canary ${name} ERR: ${e.message}`); }
+      }
+    }catch(e){ log("list ERR: " + e.message); }
+    updateTiles();
+    $("rcra-canary-status").textContent = "done";
+  });
+
+  refreshFloors();
+})();
+</script>
+
+
+
+<style>
+  .rcra-toggle { display:flex; gap:10px; align-items:center; padding:6px 8px; margin:8px 0; }
+  .rcra-toggle label { font-size:12px; color:#475569; }
+  .rcra-why { border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin:10px 0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial }
+  .rcra-why h3 { margin:0 0 6px 0; }
+</style>
+
+<div class="rcra-why" id="rcra-why">
+  <div class="rcra-toggle">
+    <label><input type="radio" name="rcraMode" value="investor" checked> Investor</label>
+    <label><input type="radio" name="rcraMode" value="tech"> Tech/Governance</label>
+  </div>
+  <div id="rcra-why-content">
+    <h3>Why This Matters — Investor View</h3>
+<p>This experience demonstrates an AI product with measurable value creation and user trust. It translates model performance into business outcomes and reduces risk via governance.</p>
+<ul>
+  <li><strong>Upside:</strong> Higher conversion and retention with better answers.</li>
+  <li><strong>Downside Protection:</strong> Automatic refunds and policy floors cap risk.</li>
+  <li><strong>Proof:</strong> Live dashboards and audits for diligence.</li>
+</ul>
+  </div>
+</div>
+<script>
+(function(){
+  var content = document.getElementById('rcra-why-content');
+  var investorHTML = `<h3>Why This Matters — Investor View</h3>
+<p>This experience demonstrates an AI product with measurable value creation and user trust. It translates model performance into business outcomes and reduces risk via governance.</p>
+<ul>
+  <li><strong>Upside:</strong> Higher conversion and retention with better answers.</li>
+  <li><strong>Downside Protection:</strong> Automatic refunds and policy floors cap risk.</li>
+  <li><strong>Proof:</strong> Live dashboards and audits for diligence.</li>
+</ul>`;
+  var techHTML = `<h3>Why This Matters — Technical & Governance</h3>
+<p>Focus on <strong>epistemic integrity</strong> with runtime enforcement and observability.</p>
+<ul>
+  <li><strong>SLRC Enforcement:</strong> Outputs gated by Secure Logic Reasoning Contracts.</li>
+  <li><strong>ROC-Tuned Floors:</strong> τ thresholds optimized on live distributions.</li>
+  <li><strong>Multisig & HMAC:</strong> Floor changes require cryptographic approvals.</li>
+  <li><strong>Continuous Assurance:</strong> Canary pass-rate & failure tiles backed by Prometheus.</li>
+  <li><strong>Ops-Ready:</strong> Containerized services, alerts, and audit artifacts.</li>
+</ul>`;
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="rcraMode"]'), function(r){ 
+    r.addEventListener('change', function(){ 
+      content.innerHTML = (r.value === 'tech') ? techHTML : investorHTML; 
+    });
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  function getParam(name){
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+  }
+  const mode = getParam("mode");
+  if(mode && mode.toLowerCase() === "tech"){
+    const techRadio = document.querySelector('input[name="rcraMode"][value="tech"]');
+    if(techRadio){
+      techRadio.checked = true;
+      const event = new Event('change');
+      techRadio.dispatchEvent(event);
+    }
+  }
+})();
+</script>
+
+
+<style>
+  .meta-card{border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin:14px 0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  .meta-table{width:100%;border-collapse:collapse;font-size:13px}
+  .meta-table th,.meta-table td{border-bottom:1px solid #e5e7eb;padding:6px 8px;text-align:left}
+  .meta-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .chip{display:inline-block;padding:3px 8px;border-radius:9999px;background:#eef2ff}
+  .btn{padding:8px 10px;border:1px solid #0ea5e9;border-radius:8px;background:#0ea5e9;color:#fff;font-weight:600;cursor:pointer}
+  .btn.secondary{background:#fff;color:#0ea5e9}
+  .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+</style>
+
+<div class="meta-card" id="meta-promotion">
+  <div class="meta-row">
+    <strong>Meta-Promotion Status</strong>
+    <span class="chip" id="meta-status">—</span>
+    <span class="mono" id="meta-updated"></span>
+  </div>
+  <div class="meta-row mono" style="margin-top:6px">
+    Thresholds: <span id="meta-thresholds">—</span>
+  </div>
+  <div class="meta-row" style="margin-top:8px">
+    <strong>Signing</strong>
+    <label class="mono">kid</label><input id="meta-kid" value="ops" size="8">
+    <label class="mono">secret (hex)</label><input id="meta-secret" size="68" placeholder="paste hex key">
+    <label class="mono">sign</label>
+    <select id="meta-sign-toggle"><option value="on" selected>ON</option><option value="off">OFF</option></select>
+  </div>
+
+  <table class="meta-table" id="meta-table" style="margin-top:8px">
+    <thead>
+      <tr><th>Artifact</th><th>ValueScore</th><th>LPD</th><th>Status</th><th>Hash</th></tr>
+    </thead>
+    <tbody id="meta-tbody"></tbody>
+  </table>
+  <div class="meta-row" style="margin-top:10px">
+    <button class="btn" id="btn-promote">Promote Release</button><button class="btn secondary" id="btn-ingest">Ingest Results</button><button class="btn secondary" id="btn-aggregate">Aggregate Now</button>
+    <button class="btn secondary" id="btn-retest">Trigger Re-Test</button>
+    <button class="btn secondary" id="btn-export">Export Evidence</button>
+  </div>
+  <pre class="mono" id="meta-log" style="white-space:pre-wrap;max-height:180px;overflow:auto;background:#0b1020;color:#d1d5db;padding:10px;border-radius:8px;margin-top:10px"></pre>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const log = msg => { const el = $("meta-log"); el.textContent = (new Date().toISOString()+" "+msg+"\n") + el.textContent; };
+
+  async function fetchJSON(url, opts){
+    const r = await fetch(url, opts||{});
+    if(!r.ok){ throw new Error(r.status+" "+await r.text()); }
+    return r.json();
+  }
+
+
+  // HMAC helpers
+  function hexToBytes(hex){ const a=[]; for(let i=0;i<hex.length;i+=2){ a.push(parseInt(hex.substr(i,2),16)); } return new Uint8Array(a); }
+  function bytesToHex(buf){ return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""); }
+  function sortKeys(obj){
+    if(Array.isArray(obj)) return obj.map(sortKeys);
+    if(obj && typeof obj==="object"){ const out={}; Object.keys(obj).sort().forEach(k=> out[k]=sortKeys(obj[k])); return out; }
+    return obj;
+  }
+  function canonicalJSON(obj){ return JSON.stringify(sortKeys(obj)); }
+  async function hmacSha256Hex(secretHex, canonical){
+    const key = await crypto.subtle.importKey("raw", hexToBytes(secretHex), {name:"HMAC", hash:"SHA-256"}, false, ["sign"]);
+    const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(canonical));
+    return bytesToHex(sig);
+  }
+  async function signedFetch(baseUrl, path, body, action){
+    const kid = (document.getElementById("meta-kid")||{}).value || "ops";
+    const secret = (document.getElementById("meta-secret")||{}).value || "";
+    const signOn = (document.getElementById("meta-sign-toggle")||{}).value !== "off";
+    const ts = Math.floor(Date.now()/1000);
+    const nonce = ts + "-" + kid;
+    const reqBody = Object.assign({}, body, { kid, nonce, ts });
+    const headers = {"Content-Type":"application/json"};
+    if(signOn){
+      if(!secret) throw new Error("Signing enabled but secret is empty");
+      const canonical = canonicalJSON({action, ...body, nonce, ts});
+      const sig = await hmacSha256Hex(secret, canonical);
+      headers["X-Signature"] = `${kid}:${sig}:${nonce}:${ts}`;
+    }
+    const res = await fetch(baseUrl.replace(/\/$/,'') + path, { method:"POST", headers, body: JSON.stringify(reqBody) });
+    if(!res.ok){ const t = await res.text(); throw new Error(res.status + " " + t); }
+    return res.json();
+  }
+
+  async function refreshMeta(){
+    try{
+      const base = (window.RCRA_FASTAPI_BASE || "http://localhost:8000").replace(/\/$/, "");
+      const j = await fetchJSON(base + "/meta_promotion/status");
+      $("meta-status").textContent = j.overall_status || "UNKNOWN";
+      $("meta-updated").textContent = j.last_updated || "";
+      const th = j.thresholds || {};
+      $("meta-thresholds").textContent = `v≥${th.v_min}, LPD≥${th.lpd_min}, σ≤${th.sigma_max}, d≥${th.depth_min}`;
+      const tbody = $("meta-tbody"); tbody.innerHTML = "";
+      (j.artifacts||[]).forEach(a => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${a.id}</td><td>${a.ValueScore?.toFixed?.(2) ?? a.ValueScore}</td><td>${a.LPD?.toFixed?.(2) ?? a.LPD}</td><td>${a.status}</td><td>${a.hash||""}</td>`;
+        tbody.appendChild(tr);
+      });
+      log("status refreshed");
+    }catch(e){ log("ERR refresh: " + e.message); }
+  }
+
+  $("btn-promote").addEventListener("click", async ()=>{
+    try{
+      const base = (window.RCRA_FASTAPI_BASE || "http://localhost:8000").replace(/\/$/, "");
+      const body = { perimeter_id: "release_2025_08", requester: "qa_lead", note: "Cockpit promote" };
+      const r = await signedFetch(base, "/meta_promotion/promote", body, "promote");
+      log("promote → " + JSON.stringify(r));
+      await refreshMeta();
+    }catch(e){ log("ERR promote: " + e.message); }
+  });
+
+  $("btn-retest").addEventListener("click", async ()=>{ log("re-test triggered (stub)"); });
+  $("btn-export").addEventListener("click", async ()=>{ log("export requested (stub)"); });
+
+  // Expose a simple way to set base URL from outside (optional)
+  window.setRcraFastapiBase = (url)=>{ window.RCRA_FASTAPI_BASE = url; refreshMeta(); };
+
+
+  document.getElementById("btn-ingest").addEventListener("click", async ()=>{
+    try{
+      const base = (window.RCRA_FASTAPI_BASE || "http://localhost:8000").replace(/\/$/, "");
+      const payload = { perimeter_id: "release_2025_08", artifacts:[
+        {"id":"contract_v2.md","ValueScore":0.92,"LPD":1.52,"status":"PASS","hash":"4e1f7c"},
+        {"id":"policy.yaml","ValueScore":0.88,"LPD":1.34,"status":"PASS","hash":"a9c2b1"},
+        {"id":"summary.pdf","ValueScore":0.83,"LPD":1.28,"status":"FAIL","hash":"6d4b2a"}
+      ]};
+      const r = await fetchJSON(base + "/meta_promotion/ingest", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload)});
+      log("ingest → " + JSON.stringify(r)); await refreshMeta();
+    }catch(e){ log("ERR ingest: " + e.message); }
+  });
+  document.getElementById("btn-aggregate").addEventListener("click", async ()=>{
+    try{
+      const base = (window.RCRA_FASTAPI_BASE || "http://localhost:8000").replace(/\/$/, "");
+      const payload = { perimeter_id: "release_2025_08", artifacts:[
+        {"id":"contract_v2.md","output":"...", "context_id":"c1"},
+        {"id":"policy.yaml",    "output":"...", "context_id":"c1"},
+        {"id":"summary.pdf",    "output":"...", "context_id":"c1"}
+      ]};
+      const r = await fetchJSON(base + "/meta_promotion/aggregate", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(payload)});
+      log("aggregate → " + JSON.stringify(r)); await refreshMeta();
+    }catch(e){ log("ERR aggregate: " + e.message); }
+  });
+
+  refreshMeta();
+})();
+</script>
+
+
+<!-- Doc Icons Overlay -->
+<div id="docIcons" style="position:fixed; top:8px; right:8px; display:flex; gap:8px; z-index:99998; pointer-events:none;">
+  <button id="docHelpIcon" class="btn tiny" title="Context Help (Shift+?)" aria-label="Context Help" style="pointer-events:auto; opacity:.9;">?</button>
+  <button id="docDocsIcon" class="btn tiny" title="Docs Index" aria-label="Docs Index" style="pointer-events:auto; opacity:.9;">📄</button>
+</div>
+<script>
+// Fallback binding if CTX_HELP_V1 hasn't attached yet
+(function(){
+  const help = document.getElementById('docHelpIcon');
+  const docs = document.getElementById('docDocsIcon');
+  function openParentDocs(anchor){
+    try { parent.postMessage({ type:'docs:open', anchor: anchor || '#overview' }, '*'); } catch(_) {}
+  }
+  help && help.addEventListener('click', (e)=>{ e.preventDefault(); if (window.openContextDocs) window.openContextDocs(); else openParentDocs('#overview'); });
+  docs && docs.addEventListener('click', (e)=>{ e.preventDefault(); openParentDocs('#overview'); });
+})();
+</script>
+
+
+<!-- Evaluator Drawer (mock-first; optional live) -->
+<style>
+#rcDrawerToggle{position:fixed;right:16px;bottom:16px;z-index:9999}
+#rcDrawer{position:fixed;right:0;top:0;bottom:0;width:min(520px,96vw);
+  transform:translateX(100%);transition:transform .25s ease;z-index:9998;
+  background:rgba(255,255,255,.98);color:#0f172a;border-left:4px solid #111827;
+  box-shadow:-12px 0 40px rgba(0,0,0,.22);padding:14px;overflow:auto}
+@media (prefers-color-scheme: dark){
+  #rcDrawer{background:rgba(15,19,26,.98);color:#e6e6ea;border-left:4px solid #e6e6ea}
+}
+#rcDrawer.open{transform:none}
+#rcDrawer h3{margin:4px 0 8px 0}
+#rcDrawer .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#rcDrawer .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;font-size:13px}
+#rcClose{position:sticky;top:0;float:right}
+#rcFloors{border:1px solid #cbd5e1;border-radius:10px;padding:8px;margin-top:8px}
+#rcScores{border:1px solid #cbd5e1;border-radius:10px;padding:8px;margin-top:8px}
+#rcRaw{white-space:pre-wrap;font-size:12px;border:1px solid #cbd5e1;border-radius:10px;padding:8px;margin-top:8px}
+</style>
+<button id="rcDrawerToggle" class="btn">Evaluator</button>
+<aside id="rcDrawer" aria-hidden="true">
+  <button id="rcClose" class="btn">Close</button>
+  <h2 style="margin:6px 0 10px 0;">Evaluator</h2>
+  <div class="row">
+    <div>
+      <label style="font-size:12px">Output</label>
+      <textarea id="rcOut" rows="8" placeholder="Paste output here…"
+        style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px"></textarea>
+      <div class="row" style="margin-top:8px">
+        <div><label style="font-size:12px">context_id</label><input id="rcCtx" placeholder="demo"
+          style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px"/></div>
+        <div><label style="font-size:12px">SLRC</label>
+          <select id="rcSlrc" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px">
+            <option value="default">default</option>
+            <option value="strict">strict</option>
+            <option value="lenient">lenient</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label style="font-size:12px">Base URL</label>
+          <input id="rcBase" placeholder="http://localhost:8080"
+            style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px"/>
+        </div>
+        <div><label style="font-size:12px">Mode</label>
+          <select id="rcMode" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px">
+            <option value="mock" selected>Mock</option>
+            <option value="live">Live</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button id="rcRun" class="btn">Run</button>
+      </div>
+    </div>
+    <div>
+      <h3>Floors</h3>
+      <div id="rcFloors" class="kv"></div>
+      <div id="rcScores" class="kv" style="margin-top:8px"></div>
+      <div style="margin-top:8px;font-weight:800">Decision: <span id="rcDecision">—</span></div>
+      <div id="rcTags" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+  </div>
+  <h3>Raw</h3>
+  <pre id="rcRaw"></pre>
+</aside>
+<script>
+(function(){
+  const $=s=>document.querySelector(s);
+  let MODE='mock', BASE='';
+  const kv = obj => Object.entries(obj).map(([k,v])=>`<div>${k}</div><div><b>${v}</b></div>`).join('');
+  function mockFloors(v){ if(v==='strict')return {tau_v:0.86,tau_L:1.35,sigma_max:0.20,d_min:3};
+    if(v==='lenient')return {tau_v:0.80,tau_L:1.20,sigma_max:0.26,d_min:2}; return {tau_v:0.84,tau_L:1.30,sigma_max:0.22,d_min:2}; }
+  function mockEval(text,f){ const spec=/\b(maybe|might|probably|guess|assume)\b/i.test(text||'');
+    const v=spec?0.84:0.89; const v_net=+(v-(spec?0.03:0)).toFixed(3);
+    const lpd=+(v_net/0.001).toFixed(3); const sigma=(text||'').toLowerCase().includes('objective')?0.19:0.25;
+    const ok=!(v_net<f.tau_v||lpd<f.tau_L||sigma>f.sigma_max||2<f.d_min);
+    return {value:{v:+v.toFixed(3),v_net}, lpd:{lpd,lpd_net:lpd}, sigma, depth:2, ok, tags: spec?[{id:'speculative_language',conf:0.12}]:[], raw:{note:'mock'}}; }
+  async function api(path, method='POST', body){ const u=`${BASE}${path}`;
+    const res=await fetch(u,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+    if(!res.ok) throw new Error(res.status+' '+res.statusText);
+    const ct=res.headers.get('content-type')||''; return ct.includes('json')?res.json():res.text(); }
+  function loadFloors(){ const variant=$('#rcSlrc').value||'default';
+    if(MODE==='mock'){ $('#rcFloors').innerHTML=kv(mockFloors(variant)); return; }
+    api('/slrc/select','POST', variant).then(j=>$('#rcFloors').innerHTML=kv(j.floors||mockFloors(variant)))
+      .catch(()=>$('#rcFloors').innerHTML=kv(mockFloors(variant))); }
+  async function run(){ const text=$('#rcOut').value||'Objective: win a 30-day pilot with refund-backed SLA.';
+    const ctx=$('#rcCtx').value||'demo'; const policy=$('#rcSlrc').value||'default'; const floors=mockFloors(policy);
+    if(MODE==='mock'){ const r=mockEval(text,floors); render(r); $('#rcRaw').textContent=JSON.stringify(r.raw,null,2); return; }
+    try{ const j=await api('/detector/eval','POST',{output:text, context_id:ctx, policy}); render({ value:j.value||{}, lpd:j.lpd||{}, sigma:j.sigma, depth:j.depth, ok:!!j.ok, tags:j.tags||[], raw:j }); $('#rcRaw').textContent=JSON.stringify(j,null,2); }
+    catch(e){ const r=mockEval(text,floors); render(r); $('#rcRaw').textContent=JSON.stringify({error:e.message, fallback:'mock'},null,2); } }
+  function render(r){ $('#rcScores').innerHTML=kv({v:r.value?.v, v_net:r.value?.v_net, lpd:r.lpd?.lpd, lpd_net:r.lpd?.lpd_net, sigma:r.sigma, d:r.depth});
+    $('#rcDecision').innerHTML = r.ok?'<span style="color:#166534">BILL</span>':'<span style="color:#b91c1c">REFUND</span>';
+    const tags=r.tags||[]; $('#rcTags').innerHTML = tags.length? tags.map(t=>`<span class="chip">${t.id} (${t.conf||t.weight||''})</span>`).join(' '):'<span class="chip">no tags</span>'; }
+  document.addEventListener('click', (e)=>{
+    if(e.target.id==='rcDrawerToggle'){ $('#rcDrawer').classList.add('open'); }
+    if(e.target.id==='rcClose'){ $('#rcDrawer').classList.remove('open'); }
+    if(e.target.id==='rcRun'){ run(); }
+  });
+  $('#rcMode').addEventListener('change', e=>{ MODE=e.target.value; loadFloors(); });
+  $('#rcBase').addEventListener('change', e=>{ BASE=e.target.value.trim(); });
+  $('#rcSlrc').addEventListener('change', loadFloors);
+  loadFloors();
+})();
+</script>
+
+</body></html>
